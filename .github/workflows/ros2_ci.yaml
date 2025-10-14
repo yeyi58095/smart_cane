@@ -1,0 +1,23 @@
+name: ROS2 CI (Foxy)
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ros-tooling/setup-ros@v0.7
+        with:
+          required-ros-distributions: foxy
+      - uses: ros-tooling/action-ros-ci@v0.4
+        with:
+          target-ros2-distro: foxy
+          import-token: ${{ secrets.GITHUB_TOKEN }}
+          package-name: |
+            smart_cane_msgs
+            smart_cane_slam
+            smart_cane_perception
+            smart_cane_landmarks
+            smart_cane_nav
+            smart_cane_bringup
+            smart_cane_sim

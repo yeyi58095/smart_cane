@@ -1,0 +1,48 @@
+[0.040s] Invoking command in '/home/daniel/smart_cane/build/smart_cane_bringup': CMAKE_PREFIX_PATH=/opt/ros/foxy /usr/bin/cmake /home/daniel/smart_cane/src/smart_cane_bringup -DAMENT_CMAKE_SYMLINK_INSTALL=1 -DCMAKE_INSTALL_PREFIX=/home/daniel/smart_cane/install/smart_cane_bringup
+[0.506s] -- The C compiler identification is GNU 9.4.0
+[0.895s] -- The CXX compiler identification is GNU 9.4.0
+[1.044s] -- Check for working C compiler: /usr/bin/cc
+[1.200s] -- Check for working C compiler: /usr/bin/cc -- works
+[1.202s] -- Detecting C compiler ABI info
+[1.330s] -- Detecting C compiler ABI info - done
+[1.336s] -- Detecting C compile features
+[1.336s] -- Detecting C compile features - done
+[1.337s] -- Check for working CXX compiler: /usr/bin/c++
+[1.584s] -- Check for working CXX compiler: /usr/bin/c++ -- works
+[1.585s] -- Detecting CXX compiler ABI info
+[1.828s] -- Detecting CXX compiler ABI info - done
+[1.834s] -- Detecting CXX compile features
+[1.836s] -- Detecting CXX compile features - done
+[1.837s] -- Found ament_cmake: 0.9.12 (/opt/ros/foxy/share/ament_cmake/cmake)
+[1.850s] -- Found PythonInterp: /usr/bin/python3 (found suitable version "3.8.10", minimum required is "3") 
+[1.850s] -- Using PYTHON_EXECUTABLE: /usr/bin/python3
+[1.939s] -- Override CMake install command with custom implementation using symlinks instead of copying resources
+[1.980s] -- Found ament_lint_auto: 0.9.8 (/opt/ros/foxy/share/ament_lint_auto/cmake)
+[2.050s] -- Added test 'copyright' to check source files copyright and LICENSE
+[2.053s] -- Added test 'lint_cmake' to check CMake code style
+[2.056s] -- Added test 'xmllint' to check XML markup files
+[2.060s] -- Configuring done
+[2.062s] -- Generating done
+[2.063s] -- Build files have been written to: /home/daniel/smart_cane/build/smart_cane_bringup
+[2.065s] Invoked command in '/home/daniel/smart_cane/build/smart_cane_bringup' returned '0': CMAKE_PREFIX_PATH=/opt/ros/foxy /usr/bin/cmake /home/daniel/smart_cane/src/smart_cane_bringup -DAMENT_CMAKE_SYMLINK_INSTALL=1 -DCMAKE_INSTALL_PREFIX=/home/daniel/smart_cane/install/smart_cane_bringup
+[2.067s] Invoking command in '/home/daniel/smart_cane/build/smart_cane_bringup': CMAKE_PREFIX_PATH=/opt/ros/foxy /usr/bin/cmake --build /home/daniel/smart_cane/build/smart_cane_bringup -- -j32 -l32
+[2.089s] Invoked command in '/home/daniel/smart_cane/build/smart_cane_bringup' returned '0': CMAKE_PREFIX_PATH=/opt/ros/foxy /usr/bin/cmake --build /home/daniel/smart_cane/build/smart_cane_bringup -- -j32 -l32
+[2.096s] Invoking command in '/home/daniel/smart_cane/build/smart_cane_bringup': CMAKE_PREFIX_PATH=/opt/ros/foxy /usr/bin/cmake --install /home/daniel/smart_cane/build/smart_cane_bringup
+[2.101s] -- Install configuration: ""
+[2.102s] -- Execute custom install script
+[2.102s] -- Symlinking: /home/daniel/smart_cane/install/smart_cane_bringup/share/ament_index/resource_index/package_run_dependencies/smart_cane_bringup
+[2.107s] -- Symlinking: /home/daniel/smart_cane/install/smart_cane_bringup/share/ament_index/resource_index/parent_prefix_path/smart_cane_bringup
+[2.113s] -- Symlinking: /home/daniel/smart_cane/install/smart_cane_bringup/share/smart_cane_bringup/environment/ament_prefix_path.sh
+[2.118s] -- Symlinking: /home/daniel/smart_cane/install/smart_cane_bringup/share/smart_cane_bringup/environment/ament_prefix_path.dsv
+[2.127s] -- Symlinking: /home/daniel/smart_cane/install/smart_cane_bringup/share/smart_cane_bringup/environment/path.sh
+[2.131s] -- Symlinking: /home/daniel/smart_cane/install/smart_cane_bringup/share/smart_cane_bringup/environment/path.dsv
+[2.136s] -- Symlinking: /home/daniel/smart_cane/install/smart_cane_bringup/share/smart_cane_bringup/local_setup.bash
+[2.141s] -- Symlinking: /home/daniel/smart_cane/install/smart_cane_bringup/share/smart_cane_bringup/local_setup.sh
+[2.146s] -- Symlinking: /home/daniel/smart_cane/install/smart_cane_bringup/share/smart_cane_bringup/local_setup.zsh
+[2.151s] -- Symlinking: /home/daniel/smart_cane/install/smart_cane_bringup/share/smart_cane_bringup/local_setup.dsv
+[2.156s] -- Symlinking: /home/daniel/smart_cane/install/smart_cane_bringup/share/smart_cane_bringup/package.dsv
+[2.161s] -- Symlinking: /home/daniel/smart_cane/install/smart_cane_bringup/share/ament_index/resource_index/packages/smart_cane_bringup
+[2.167s] -- Symlinking: /home/daniel/smart_cane/install/smart_cane_bringup/share/smart_cane_bringup/cmake/smart_cane_bringupConfig.cmake
+[2.173s] -- Symlinking: /home/daniel/smart_cane/install/smart_cane_bringup/share/smart_cane_bringup/cmake/smart_cane_bringupConfig-version.cmake
+[2.178s] -- Symlinking: /home/daniel/smart_cane/install/smart_cane_bringup/share/smart_cane_bringup/package.xml
+[2.190s] Invoked command in '/home/daniel/smart_cane/build/smart_cane_bringup' returned '0': CMAKE_PREFIX_PATH=/opt/ros/foxy /usr/bin/cmake --install /home/daniel/smart_cane/build/smart_cane_bringup

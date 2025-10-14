@@ -1,0 +1,32 @@
+# colcon
+build/
+install/
+log/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+env/
+venv/
+
+# Editors
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Models & datasets (you manage them separately)
+*.onnx
+*.engine
+*.pt
+*.pth
+*.pb
+*.bag
+*.zip
+*.tar
+*.tar.gz

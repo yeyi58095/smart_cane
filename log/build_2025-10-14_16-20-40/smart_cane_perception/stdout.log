@@ -1,0 +1,22 @@
+running develop
+running egg_info
+creating smart_cane_perception.egg-info
+writing smart_cane_perception.egg-info/PKG-INFO
+writing dependency_links to smart_cane_perception.egg-info/dependency_links.txt
+writing entry points to smart_cane_perception.egg-info/entry_points.txt
+writing requirements to smart_cane_perception.egg-info/requires.txt
+writing top-level names to smart_cane_perception.egg-info/top_level.txt
+writing manifest file 'smart_cane_perception.egg-info/SOURCES.txt'
+reading manifest file 'smart_cane_perception.egg-info/SOURCES.txt'
+writing manifest file 'smart_cane_perception.egg-info/SOURCES.txt'
+running build_ext
+Creating /home/daniel/smart_cane/install/smart_cane_perception/lib/python3.8/site-packages/site.py
+Creating /home/daniel/smart_cane/install/smart_cane_perception/lib/python3.8/site-packages/smart-cane-perception.egg-link (link to .)
+
+Installed /home/daniel/smart_cane/build/smart_cane_perception
+running symlink_data
+creating /home/daniel/smart_cane/install/smart_cane_perception/share/ament_index
+creating /home/daniel/smart_cane/install/smart_cane_perception/share/ament_index/resource_index
+creating /home/daniel/smart_cane/install/smart_cane_perception/share/ament_index/resource_index/packages
+symbolically linking /home/daniel/smart_cane/build/smart_cane_perception/resource/smart_cane_perception -> /home/daniel/smart_cane/install/smart_cane_perception/share/ament_index/resource_index/packages
+symbolically linking /home/daniel/smart_cane/build/smart_cane_perception/package.xml -> /home/daniel/smart_cane/install/smart_cane_perception/share/smart_cane_perception

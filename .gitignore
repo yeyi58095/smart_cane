@@ -1,4 +1,4 @@
-# colcon
+# ROS 2 / colcon build artifacts
 build/
 install/
 log/
@@ -12,21 +12,49 @@ __pycache__/
 env/
 venv/
 
-# Editors
+# Editors / IDEs
 .vscode/
 .idea/
+.project
+.cproject
+*.user
+CMakeLists.txt.user
 
-# OS
+# macOS / Windows junk
 .DS_Store
 Thumbs.db
 
-# Models & datasets (you manage them separately)
-*.onnx
-*.engine
-*.pt
-*.pth
-*.pb
+# ROS message/service/action generated files
+msg/_*.py
+srv/_*.py
+action/_*.py
+
+# Dynamic reconfigure (ROS1 legacy)
+*.cfgc
+cfg/cpp/
+cfg/*.py
+
+# Optional: Large models or data
 *.bag
 *.zip
 *.tar
 *.tar.gz
+*.onnx
+*.pt
+*.pb
+*.engine
+
+# Ignore generated docs
+*.dox
+*.wikidoc
+
+# Catkin legacy
+devel/
+devel_isolated/
+build_isolated/
+logs/
+
+# Misc
+*~
+.#*
+CATKIN_IGNORE

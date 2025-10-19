@@ -15,6 +15,7 @@ jobs:
     timeout-minutes: 60
     env:
       DEBIAN_FRONTEND: noninteractive
+      AMENT_TRACE_SETUP_FILES: "0"
 
     steps:
       - uses: actions/checkout@v4

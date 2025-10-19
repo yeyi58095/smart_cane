@@ -1,23 +1,36 @@
 name: ROS2 CI (Foxy)
-on: [push, pull_request]
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
-    runs-on: ubuntu-20.04
+    # 用你的自有 runner；只匹配 self-hosted + wsl（不要加 humble 標籤，避免被版本限制）
+    runs-on: [self-hosted, wsl]
+    timeout-minutes: 60
+
     steps:
       - uses: actions/checkout@v4
-      - uses: ros-tooling/setup-ros@v0.7
+
+      # 在 runner 上安裝 ROS 2 Foxy（不依賴本機是否已裝）
+      - name: Setup ROS 2 Foxy
+        uses: ros-tooling/setup-ros@v0.7
         with:
           required-ros-distributions: foxy
-      - uses: ros-tooling/action-ros-ci@v0.4
+
+      # 先建最小集合，加速與驗證流程；之後再加其他套件
+      - name: Build with colcon
+        uses: ros-tooling/action-ros-ci@v0.4
         with:
           target-ros2-distro: foxy
           import-token: ${{ secrets.GITHUB_TOKEN }}
           package-name: |
             smart_cane_msgs
-            smart_cane_slam
-            smart_cane_perception
-            smart_cane_landmarks
-            smart_cane_nav
             smart_cane_bringup
-            smart_cane_sim
+          # 若你的專案根目錄就是工作區（含 src/），可省略 workspace 參數
+          # workspace: .

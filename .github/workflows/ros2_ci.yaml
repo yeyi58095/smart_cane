@@ -52,7 +52,7 @@ jobs:
       - name: rosdep install
         shell: bash
         run: |
-          set -euxo pipefail
+          set -exo pipefail
           source /opt/ros/foxy/setup.bash
           rosdep install --from-paths src --ignore-src -r -y
 
@@ -60,6 +60,6 @@ jobs:
       - name: colcon build
         shell: bash
         run: |
-          set -euxo pipefail
+          set -exo pipefail
           source /opt/ros/foxy/setup.bash
           colcon build --event-handlers console_direct+ --symlink-install

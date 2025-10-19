@@ -56,6 +56,12 @@ jobs:
           source /opt/ros/foxy/setup.bash
           rosdep install --from-paths src --ignore-src -r -y
 
+      - name: Clean previous colcon artifacts
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf build/ install/ log/
+
       # ---- 4) 建置 ----
       - name: colcon build
         shell: bash

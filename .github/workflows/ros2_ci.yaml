@@ -1,4 +1,4 @@
-name: ROS2 CI (Foxy)
+name: ROS2 CI (Foxy, self-hosted no-setup-ros)
 
 on:
   push:
@@ -11,27 +11,54 @@ concurrency:
 
 jobs:
   build:
-    # 用你的自有 runner；只匹配 self-hosted + wsl（不要加 humble 標籤，避免被版本限制）
-    runs-on: [self-hosted, wsl]
+    runs-on: [self-hosted, wsl]   # 你的自有 runner 標籤
     timeout-minutes: 60
+    env:
+      DEBIAN_FRONTEND: noninteractive
 
     steps:
       - uses: actions/checkout@v4
 
-      # 在 runner 上安裝 ROS 2 Foxy（不依賴本機是否已裝）
-      - name: Setup ROS 2 Foxy
-        uses: ros-tooling/setup-ros@v0.7
-        with:
-          required-ros-distributions: foxy
+      # ---- 1) 基本環境（顯示完整輸出，容易除錯）----
+      - name: Preflight APT & locale
+        shell: bash
+        run: |
+          set -euxo pipefail
+          echo 'Etc/UTC' | sudo -n tee /etc/timezone
+          sudo -n apt-get update
+          sudo -n apt-get install -y curl gnupg2 locales lsb-release
+          sudo -n locale-gen en_US en_US.UTF-8
+          sudo -n update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
+          locale
+          lsb_release -a || true
 
-      # 先建最小集合，加速與驗證流程；之後再加其他套件
-      - name: Build with colcon
-        uses: ros-tooling/action-ros-ci@v0.4
-        with:
-          target-ros2-distro: foxy
-          import-token: ${{ secrets.GITHUB_TOKEN }}
-          package-name: |
-            smart_cane_msgs
-            smart_cane_bringup
-          # 若你的專案根目錄就是工作區（含 src/），可省略 workspace 參數
-          # workspace: .
+      # ---- 2) 加入 ROS2 Foxy 套件庫並安裝 ----
+      - name: Install ROS 2 Foxy
+        shell: bash
+        run: |
+          set -euxo pipefail
+          # 金鑰 & 套件庫
+          curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc | sudo -n apt-key add -
+          echo "deb http://packages.ros.org/ros2/ubuntu $(lsb_release -cs) main" | sudo -n tee /etc/apt/sources.list.d/ros2-latest.list
+          sudo -n apt-get update
+          # 你要的是能 build 就好；若空間夠也可裝 ros-foxy-desktop
+          sudo -n apt-get install -y ros-foxy-ros-base python3-colcon-common-extensions python3-rosdep
+          # 初始化 rosdep（第一次可能會 warn，無妨）
+          sudo -n rosdep init || true
+          rosdep update
+
+      # ---- 3) 用 rosdep 解析專案相依（非 ROS 套件）----
+      - name: rosdep install
+        shell: bash
+        run: |
+          set -euxo pipefail
+          source /opt/ros/foxy/setup.bash
+          rosdep install --from-paths src --ignore-src -r -y
+
+      # ---- 4) 建置 ----
+      - name: colcon build
+        shell: bash
+        run: |
+          set -euxo pipefail
+          source /opt/ros/foxy/setup.bash
+          colcon build --event-handlers console_direct+ --symlink-install

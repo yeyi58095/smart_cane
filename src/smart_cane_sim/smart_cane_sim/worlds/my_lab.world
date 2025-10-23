@@ -1,0 +1,13 @@
+<?xml version="1.0" ?>
+<sdf version="1.6">
+  <world name="my_lab">
+    <gravity>0 0 -9.8</gravity>
+    <include><uri>model://sun</uri></include>
+    <include><uri>model://ground_plane</uri></include>
+    <model name="wall_A"><pose>2 0 0.5 0 0 0</pose><static>true</static><link name="l"><collision name="c"><geometry><box><size>4 0.1 1</size></box></geometry></collision><visual name="v"><geometry><box><size>4 0.1 1</size></box></geometry></visual></link></model>
+    <model name="wall_B"><pose>-1.5 1.0 0.5 0 0 0.35</pose><static>true</static><link name="l"><collision name="c"><geometry><box><size>2 0.1 1</size></box></geometry></collision><visual name="v"><geometry><box><size>2 0.1 1</size></box></geometry></visual></link></model>
+    <model name="box_1"><pose>0.5 -0.8 0.25 0 0 0.2</pose><static>true</static><link name="l"><collision name="c"><geometry><box><size>0.5 0.5 0.5</size></box></geometry></collision><visual name="v"><geometry><box><size>0.5 0.5 0.5</size></box></geometry></visual></link></model>
+    <model name="box_2"><pose>-0.7 -0.2 0.25 0 0 -0.4</pose><static>true</static><link name="l"><collision name="c"><geometry><box><size>0.5 0.5 0.5</size></box></geometry></collision><visual name="v"><geometry><box><size>0.5 0.5 0.5</size></box></geometry></visual></link></model>
+    <model name="box_3"><pose>-1.2 1.2 0.25 0 0 0.6</pose><static>true</static><link name="l"><collision name="c"><geometry><box><size>0.5 0.5 0.5</size></box></geometry></collision><visual name="v"><geometry><box><size>0.5 0.5 0.5</size></box></geometry></visual></link></model>
+  </world>
+</sdf>

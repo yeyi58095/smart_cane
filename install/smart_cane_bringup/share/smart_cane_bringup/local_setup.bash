@@ -1,1 +1,0 @@
-/home/daniel/smart_cane/build/smart_cane_bringup/ament_cmake_environment_hooks/local_setup.bash

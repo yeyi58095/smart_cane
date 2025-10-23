@@ -1,6 +1,0 @@
-Invoking command in '/home/daniel/smart_cane/build/smart_cane_msgs': CMAKE_PREFIX_PATH=/opt/ros/foxy /usr/bin/cmake /home/daniel/smart_cane/src/smart_cane_msgs -DAMENT_CMAKE_SYMLINK_INSTALL=1 -DCMAKE_INSTALL_PREFIX=/home/daniel/smart_cane/install/smart_cane_msgs
-Invoked command in '/home/daniel/smart_cane/build/smart_cane_msgs' returned '0': CMAKE_PREFIX_PATH=/opt/ros/foxy /usr/bin/cmake /home/daniel/smart_cane/src/smart_cane_msgs -DAMENT_CMAKE_SYMLINK_INSTALL=1 -DCMAKE_INSTALL_PREFIX=/home/daniel/smart_cane/install/smart_cane_msgs
-Invoking command in '/home/daniel/smart_cane/build/smart_cane_msgs': CMAKE_PREFIX_PATH=/opt/ros/foxy /usr/bin/cmake --build /home/daniel/smart_cane/build/smart_cane_msgs -- -j32 -l32
-Invoked command in '/home/daniel/smart_cane/build/smart_cane_msgs' returned '0': CMAKE_PREFIX_PATH=/opt/ros/foxy /usr/bin/cmake --build /home/daniel/smart_cane/build/smart_cane_msgs -- -j32 -l32
-Invoking command in '/home/daniel/smart_cane/build/smart_cane_msgs': CMAKE_PREFIX_PATH=/opt/ros/foxy /usr/bin/cmake --install /home/daniel/smart_cane/build/smart_cane_msgs
-Invoked command in '/home/daniel/smart_cane/build/smart_cane_msgs' returned '0': CMAKE_PREFIX_PATH=/opt/ros/foxy /usr/bin/cmake --install /home/daniel/smart_cane/build/smart_cane_msgs

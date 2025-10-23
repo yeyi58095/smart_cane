@@ -9,7 +9,7 @@ from launch.substitutions import Command
 def generate_launch_description():
     world_arg = DeclareLaunchArgument(
         'world',
-        default_value=PathJoinSubstitution([FindPackageShare('smart_cane_sim'), 'worlds', 'my_lab.world']),
+        default_value=PathJoinSubstitution([FindPackageShare('smart_cane_sim'), 'worlds', 'new_hospital.world']),
         description='SDF world file'
     )
 

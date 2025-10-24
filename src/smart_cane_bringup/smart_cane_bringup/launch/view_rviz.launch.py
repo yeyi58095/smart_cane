@@ -7,7 +7,7 @@ from launch_ros.actions import Node
 def generate_launch_description():
     cfg = DeclareLaunchArgument(
         'rviz_config',
-        default_value=PathJoinSubstitution([FindPackageShare('smart_cane_bringup'), 'rviz', 'sim_view.rviz'])
+        default_value=PathJoinSubstitution([FindPackageShare('smart_cane_bringup'), 'rviz', 'sim_view_default.rviz'])
     )
     rviz = Node(package='rviz2', executable='rviz2',
                 arguments=['-d', LaunchConfiguration('rviz_config')], output='screen')

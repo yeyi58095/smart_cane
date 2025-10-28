@@ -10,3 +10,5 @@ smart_cane_nav.egg-info/entry_points.txt
 smart_cane_nav.egg-info/requires.txt
 smart_cane_nav.egg-info/top_level.txt
 smart_cane_nav.egg-info/zip-safe
+smart_cane_nav/launch/nav2_slam.launch.py
+smart_cane_nav/params/nav2_slam.yaml

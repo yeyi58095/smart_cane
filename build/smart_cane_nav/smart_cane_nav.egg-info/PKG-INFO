@@ -1,10 +1,10 @@
 Metadata-Version: 1.2
 Name: smart-cane-nav
 Version: 0.0.0
-Summary: TODO: Package description
+Summary: Nav2 (SLAM mode) for smart_cane
 Home-page: UNKNOWN
 Maintainer: daniel
 Maintainer-email: yeyi58095@gmail.com
-License: TODO: License declaration
+License: MIT
 Description: UNKNOWN
 Platform: UNKNOWN

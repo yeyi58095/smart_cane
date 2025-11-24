@@ -1,1 +1,0 @@
-/home/daniel/smart_cane/src/smart_cane_landmarks/setup.py

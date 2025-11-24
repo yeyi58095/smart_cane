@@ -1,1 +1,28 @@
-/home/daniel/smart_cane/build/smart_cane_nav/package.xml
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>smart_cane_nav</name>
+  <version>0.0.0</version>
+  <description>TODO: Package description</description>
+  <maintainer email="yeyi58095@gmail.com">daniel</maintainer>
+  <license>TODO: License declaration</license>
+
+  <test_depend>ament_copyright</test_depend>
+  <test_depend>ament_flake8</test_depend>
+  <test_depend>ament_pep257</test_depend>
+  <test_depend>python3-pytest</test_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+
+  <buildtool_depend>ament_python</buildtool_depend>
+<exec_depend>nav2_bringup</exec_depend>
+<exec_depend>nav2_planner</exec_depend>
+<exec_depend>nav2_controller</exec_depend>
+<exec_depend>nav2_bt_navigator</exec_depend>
+<exec_depend>nav2_recoveries</exec_depend>
+ <exec_depend>nav2_lifecycle_manager</exec_depend>
+
+
+</package>

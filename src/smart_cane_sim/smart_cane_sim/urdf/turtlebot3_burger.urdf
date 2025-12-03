@@ -193,4 +193,40 @@
     </inertial>
   </link>
 
+    <!-- camera on top of the robot -->
+  <link name="camera_link">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.1"/>
+      <inertia ixx="1e-4" ixy="0.0" ixz="0.0"
+               iyy="1e-4" iyz="0.0"
+               izz="1e-4"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <!-- 小小一塊盒子當相機殼 -->
+        <box size="0.04 0.04 0.03"/>
+      </geometry>
+      <material name="black">
+        <color rgba="0.1 0.1 0.1 1.0"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.04 0.04 0.03"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="camera_joint" type="fixed">
+    <!-- 你也可以改成 base_footprint，看你想接在哪個 frame 上 -->
+    <parent link="base_link"/>
+    <child link="camera_link"/>
+    <!-- 高度自己調，這裡先放在機器人上方 25 公分 -->
+    <origin xyz="0 0 0.25" rpy="0 0 0"/>
+  </joint>
+
+
 </robot>

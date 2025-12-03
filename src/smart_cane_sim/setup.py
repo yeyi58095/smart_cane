@@ -10,14 +10,56 @@ setup(
     packages=[package_name],  # 對應 smart_cane_sim/__init__.py
     data_files=[
         # ★ 必須：註冊到 ament 索引，讓 FindPackageShare 能找到這個包
-        ('share/ament_index/resource_index/packages', ['resource/' + package_name]),
+        (
+            os.path.join('share', 'ament_index', 'resource_index', 'packages'),
+            [os.path.join('resource', package_name)]
+        ),
+
         # ★ 必須：把 package.xml 安裝到 share/<pkg>
-        (os.path.join('share', package_name), ['package.xml']),
-        # world 與 launch 一起安裝到 share/<pkg> 下，ros2 launch 才能找到
-        (os.path.join('share', package_name, 'worlds'), glob('smart_cane_sim/worlds/*.world')),
-        (os.path.join('share', package_name, 'launch'), glob('smart_cane_sim/launch/*.py')),
-        # （可選）把 resource/<pkg> 也複製一份到 share/<pkg>/resource 方便檢查
-        (os.path.join('share', package_name, 'resource'), ['resource/' + package_name]),
+        (
+            os.path.join('share', package_name),
+            ['package.xml']
+        ),
+
+        # worlds：安裝到 share/<pkg>/worlds
+        (
+            os.path.join('share', package_name, 'worlds'),
+            glob(os.path.join(package_name, 'worlds', '*.world'))
+        ),
+
+        # launch：安裝到 share/<pkg>/launch
+        (
+            os.path.join('share', package_name, 'launch'),
+            glob(os.path.join(package_name, 'launch', '*.py'))
+        ),
+
+        # resource（可選）：方便檢查
+        (
+            os.path.join('share', package_name, 'resource'),
+            [os.path.join('resource', package_name)]
+        ),
+
+        # ✅ URDF：安裝到 share/<pkg>/urdf
+        (
+            os.path.join('share', package_name, 'urdf'),
+            glob(os.path.join(package_name, 'urdf', '*.urdf'))
+        ),
+
+        # ✅ Gazebo 模型：上層檔案（model.sdf、model.config 等）
+        (
+            os.path.join('share', package_name, 'models', 'turtlebot3_burger'),
+            [
+                os.path.join(package_name, 'models', 'turtlebot3_burger', 'model.sdf'),
+                os.path.join(package_name, 'models', 'turtlebot3_burger', 'model-1_4.sdf'),
+                os.path.join(package_name, 'models', 'turtlebot3_burger', 'model.config'),
+            ]
+        ),
+
+        # ✅ Gazebo 模型：meshes 資料夾底下的檔案
+        (
+            os.path.join('share', package_name, 'models', 'turtlebot3_burger', 'meshes'),
+            glob(os.path.join(package_name, 'models', 'turtlebot3_burger', 'meshes', '*'))
+        ),
     ],
     install_requires=['setuptools'],
     zip_safe=True,

@@ -1,1 +1,0 @@
-/home/daniel/smart_cane/build/smart_cane_msgs/ament_cmake_core/smart_cane_msgsConfig-version.cmake

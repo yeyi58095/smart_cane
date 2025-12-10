@@ -21,6 +21,7 @@ setup(
     entry_points={
         'console_scripts': [
             'color_bed_detector = smart_cane_perception.color_bed_detector:main',
+            'multi_bed_detector = smart_cane_perception.multi_bed_detector:main',
         ],
     },
 )

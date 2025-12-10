@@ -1196,13 +1196,6 @@
                 <size>1 2 1</size>
               </box>
             </geometry>
-
-            <material>
-            <ambient>0 0 1 1</ambient>   <!-- 藍色 -->
-            <diffuse>0 0 1 1</diffuse>
-            <specular>0.1 0.1 0.1 1</specular>
-            <emissive>0 0 0 1</emissive>
-          </material>
           </visual>
           <self_collide>0</self_collide>
           <inertial>
@@ -1250,14 +1243,6 @@
                 <size>1 2 1</size>
               </box>
             </geometry>
-
-          <material>
-            <ambient>1 0 0 1</ambient>   <!-- cred色 -->
-            <diffuse>1 0 0 1</diffuse>
-            <specular>0.1 0.1 0.1 1</specular>
-            <emissive>0 0 0 1</emissive>
-          </material>
-
           </visual>
           <self_collide>0</self_collide>
           <inertial>
@@ -1305,14 +1290,6 @@
                 <size>1 2 1</size>
               </box>
             </geometry>
-
-        <material>
-            <ambient>0 1 0 1</ambient>   <!-- green -->
-            <diffuse>0 1 0 1</diffuse>
-            <specular>0.1 0.1 0.1 1</specular>
-            <emissive>0 0 0 1</emissive>
-          </material>
-
           </visual>
           <self_collide>0</self_collide>
           <inertial>
@@ -1360,14 +1337,6 @@
                 <size>1 2 1</size>
               </box>
             </geometry>
-
-        <material>
-        <ambient>1 1 0 1</ambient>   <!-- yello -->
-        <diffuse>1 1 0 1</diffuse>
-        <specular>0.1 0.1 0.1 1</specular>
-        <emissive>0 0 0 1</emissive>
-      </material>
-
           </visual>
           <self_collide>0</self_collide>
           <inertial>
@@ -1415,13 +1384,6 @@
                 <size>1 2 1</size>
               </box>
             </geometry>
-
-            <material>
-            <ambient>0 1 1 1</ambient>   <!-- 青色 -->
-            <diffuse>0 1 1 1</diffuse>
-            <specular>0.1 0.1 0.1 1</specular>
-            <emissive>0 0 0 1</emissive>
-          </material>
           </visual>
           <self_collide>0</self_collide>
           <inertial>
@@ -1469,14 +1431,6 @@
                 <size>1 2 1</size>
               </box>
             </geometry>
-
-          <material>
-            <ambient>1 0 1 1</ambient>   <!-- 品紅 -->
-            <diffuse>1 0 1 1</diffuse>
-            <specular>0.1 0.1 0.1 1</specular>
-            <emissive>0 0 0 1</emissive>
-          </material>
-
           </visual>
           <self_collide>0</self_collide>
           <inertial>
@@ -1524,14 +1478,6 @@
                 <size>1 2 1</size>
               </box>
             </geometry>
-
-        <material>
-                <ambient>1 0.5 0 1</ambient>   <!-- 藍色 -->
-                <diffuse>1 0.5 0 1</diffuse>
-                <specular>0.1 0.1 0.1 1</specular>
-                <emissive>0 0 0 1</emissive>
-              </material>
-
           </visual>
           <self_collide>0</self_collide>
           <inertial>
@@ -1579,14 +1525,6 @@
                 <size>1 2 1</size>
               </box>
             </geometry>
-
-    <material>
-            <ambient>1 1 1 1</ambient>   <!-- white -->
-            <diffuse>1 1 1 1</diffuse>
-            <specular>0.1 0.1 0.1 1</specular>
-            <emissive>0 0 0 1</emissive>
-          </material>
-
           </visual>
           <self_collide>0</self_collide>
           <inertial>
@@ -1634,14 +1572,6 @@
                 <size>1 2 1</size>
               </box>
             </geometry>
-
-        <material>
-        <ambient>0 0 0 1</ambient>   <!-- black -->
-        <diffuse>0 0 0 1</diffuse>
-        <specular>0.1 0.1 0.1 1</specular>
-        <emissive>0 0 0 1</emissive>
-      </material>
-
           </visual>
           <self_collide>0</self_collide>
           <inertial>

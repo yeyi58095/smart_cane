@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<sdf version="1.6">
+  <model name="bed_marker_red">
+
+    <!-- 不受重力影響、不會倒 -->
+    <static>true</static>
+
+    <link name="panel_link">
+      <!-- 牌子的寬、厚、高：自己調 -->
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>0.6 0.03 0.3</size>
+          </box>
+        </geometry>
+      </collision>
+
+      <visual name="visual">
+        <geometry>
+          <box>
+            <size>0.6 0.03 0.3</size>
+          </box>
+        </geometry>
+        <material>
+          <!-- 顏色：純紅 -->
+          <ambient>1 0 0 1</ambient>
+          <diffuse>1 0 0 1</diffuse>
+          <specular>0.1 0.1 0.1 1</specular>
+          <emissive>0 0 0 1</emissive>
+        </material>
+      </visual>
+    </link>
+  </model>
+</sdf>

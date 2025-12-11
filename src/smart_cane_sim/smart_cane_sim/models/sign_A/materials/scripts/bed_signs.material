@@ -12,7 +12,7 @@ material BedSigns/A_sign
 
       texture_unit
       {
-        texture letterA.png    // 就是 materials/textures/ 底下那個檔
+        texture bus.jpg    // 就是 materials/textures/ 底下那個檔
         filtering anisotropic
       }
     }

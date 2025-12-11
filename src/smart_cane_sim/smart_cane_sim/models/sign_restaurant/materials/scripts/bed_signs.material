@@ -12,7 +12,7 @@ material BedSigns/restaurant_sign
 
       texture_unit
       {
-        texture restaurant.png    // 就是 materials/textures/ 底下那個檔
+        texture motorcyle.jpg    // 就是 materials/textures/ 底下那個檔
         filtering anisotropic
       }
     }

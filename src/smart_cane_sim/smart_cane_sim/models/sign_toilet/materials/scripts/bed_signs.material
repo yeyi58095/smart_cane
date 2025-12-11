@@ -12,7 +12,7 @@ material BedSigns/toilet_sign
 
       texture_unit
       {
-        texture toilet_symbol.jpg    // 就是 materials/textures/ 底下那個檔
+        texture person.jpg    // 就是 materials/textures/ 底下那個檔
         filtering anisotropic
       }
     }

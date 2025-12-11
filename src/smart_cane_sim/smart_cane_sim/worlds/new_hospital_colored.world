@@ -961,20 +961,10 @@
       <static>1</static>
     </model>
     <state world_name='default'>
-      <sim_time>128 117000000</sim_time>
-      <real_time>80 204563583</real_time>
-      <wall_time>1765430632 884919991</wall_time>
-      <iterations>80059</iterations>
-      <model name='bed_sign_A'>
-        <pose>-0.064768 -3.93857 0 0 -0 1.57541</pose>
-        <scale>1 1 1</scale>
-        <link name='sign_link'>
-          <pose>-0.064768 -3.93857 1 0 -0 1.57541</pose>
-          <velocity>0 0 0 0 -0 0</velocity>
-          <acceleration>0 0 0 0 -0 0</acceleration>
-          <wrench>0 0 0 0 -0 0</wrench>
-        </link>
-      </model>
+      <sim_time>48 58000000</sim_time>
+      <real_time>48 242753962</real_time>
+      <wall_time>1742991360 698231707</wall_time>
+      <iterations>48058</iterations>
       <model name='ground_plane'>
         <pose>0 0 0 0 -0 0</pose>
         <scale>1 1 1</scale>
@@ -1083,93 +1073,93 @@
         <pose>-2.3765 -3.726 0.5 0 -0 0</pose>
         <scale>1 1 1</scale>
         <model name='box_2x1'>
-          <pose>-2.51265 -3.92196 0.5 0 -0 -1.56403</pose>
+          <pose>-2.51265 -3.92196 0.5 0 0 -1.56403</pose>
           <scale>1 1 1</scale>
           <link name='link'>
-            <pose>-2.51265 -3.92196 0.5 0 -0 -1.56403</pose>
+            <pose>-2.51265 -3.92196 0.5 0 0 -1.56403</pose>
             <velocity>0 0 0 0 -0 0</velocity>
-            <acceleration>-1e-05 1.9e-05 0 -3.9e-05 -2e-05 0</acceleration>
-            <wrench>-1e-05 1.9e-05 0 0 -0 0</wrench>
+            <acceleration>0 0 0 0 -0 0</acceleration>
+            <wrench>0 0 0 0 -0 0</wrench>
           </link>
         </model>
         <model name='box_2x1_clone'>
           <pose>-2.48652 -1.43999 0.5 0 0 -1.56403</pose>
           <scale>1 1 1</scale>
           <link name='link'>
-            <pose>-2.48652 -1.43999 0.5 0 -0 -1.56403</pose>
+            <pose>-2.48652 -1.43999 0.5 0 0 -1.56403</pose>
             <velocity>0 0 0 0 -0 0</velocity>
-            <acceleration>-1e-05 1.9e-05 0 -3.9e-05 -2e-05 0</acceleration>
-            <wrench>-1e-05 1.9e-05 0 0 -0 0</wrench>
+            <acceleration>0 0 0 0 -0 0</acceleration>
+            <wrench>0 0 0 0 -0 0</wrench>
           </link>
         </model>
         <model name='box_2x1_clone_0'>
           <pose>-2.46652 0.74395 0.5 0 0 -1.56403</pose>
           <scale>1 1 1</scale>
           <link name='link'>
-            <pose>-2.46652 0.74395 0.5 0 -0 -1.56403</pose>
+            <pose>-2.46652 0.74395 0.5 0 0 -1.56403</pose>
             <velocity>0 0 0 0 -0 0</velocity>
-            <acceleration>-1e-05 1.9e-05 0 -3.9e-05 -2e-05 0</acceleration>
-            <wrench>-1e-05 1.9e-05 0 0 -0 0</wrench>
+            <acceleration>0 0 0 0 -0 0</acceleration>
+            <wrench>0 0 0 0 -0 0</wrench>
           </link>
         </model>
         <model name='box_2x1_clone_1'>
           <pose>-2.48411 3.13345 0.5 0 0 -1.56403</pose>
           <scale>1 1 1</scale>
           <link name='link'>
-            <pose>-2.48411 3.13345 0.5 0 -0 -1.56403</pose>
+            <pose>-2.48411 3.13345 0.5 0 0 -1.56403</pose>
             <velocity>0 0 0 0 -0 0</velocity>
-            <acceleration>-1e-05 1.9e-05 -0 -3.9e-05 -2e-05 0</acceleration>
-            <wrench>-1e-05 1.9e-05 -0 0 -0 0</wrench>
+            <acceleration>0 0 0 0 -0 0</acceleration>
+            <wrench>0 0 0 0 -0 0</wrench>
           </link>
         </model>
         <model name='box_2x1_clone_2'>
           <pose>5.35876 -1.49094 0.5 0 0 -1.56403</pose>
           <scale>1 1 1</scale>
           <link name='link'>
-            <pose>5.35876 -1.49094 0.5 0 -0 -1.56403</pose>
+            <pose>5.35876 -1.49094 0.5 0 0 -1.56403</pose>
             <velocity>0 0 0 0 -0 0</velocity>
-            <acceleration>-1e-05 1.9e-05 0 -3.9e-05 -2e-05 0</acceleration>
-            <wrench>-1e-05 1.9e-05 0 0 -0 0</wrench>
+            <acceleration>0 0 0 0 -0 0</acceleration>
+            <wrench>0 0 0 0 -0 0</wrench>
           </link>
         </model>
         <model name='box_2x1_clone_3'>
           <pose>5.30783 0.99447 0.5 0 0 -1.56403</pose>
           <scale>1 1 1</scale>
           <link name='link'>
-            <pose>5.30783 0.99447 0.5 0 -0 -1.56403</pose>
+            <pose>5.30783 0.99447 0.5 0 0 -1.56403</pose>
             <velocity>0 0 0 0 -0 0</velocity>
-            <acceleration>-1e-05 1.9e-05 0 -3.9e-05 -2e-05 0</acceleration>
-            <wrench>-1e-05 1.9e-05 0 0 -0 0</wrench>
+            <acceleration>0 0 0 0 -0 0</acceleration>
+            <wrench>0 0 0 0 -0 0</wrench>
           </link>
         </model>
         <model name='box_2x1_clone_4'>
           <pose>5.34591 3.34318 0.5 0 0 -1.56403</pose>
           <scale>1 1 1</scale>
           <link name='link'>
-            <pose>5.34591 3.34318 0.5 0 -0 -1.56403</pose>
+            <pose>5.34591 3.34318 0.5 0 0 -1.56403</pose>
             <velocity>0 0 0 0 -0 0</velocity>
-            <acceleration>-1e-05 1.9e-05 0 -3.9e-05 -2e-05 0</acceleration>
-            <wrench>-1e-05 1.9e-05 0 0 -0 0</wrench>
+            <acceleration>0 0 0 0 -0 0</acceleration>
+            <wrench>0 0 0 0 -0 0</wrench>
           </link>
         </model>
         <model name='box_2x1_clone_5'>
           <pose>5.50402 5.61943 0.5 0 0 -1.56403</pose>
           <scale>1 1 1</scale>
           <link name='link'>
-            <pose>5.45218 5.62221 0.500001 0 -1e-06 -1.56701</pose>
+            <pose>5.50402 5.61943 0.5 0 0 -1.56403</pose>
             <velocity>0 0 0 0 -0 0</velocity>
-            <acceleration>0.01039 -2.74397 3.91997 -0.795257 0.020781 -0</acceleration>
-            <wrench>0.01039 -2.74397 3.91997 0 -0 0</wrench>
+            <acceleration>0 0 0 0 -0 0</acceleration>
+            <wrench>0 0 0 0 -0 0</wrench>
           </link>
         </model>
         <model name='box_2x1_clone_6'>
           <pose>-2.43597 5.71873 0.5 0 0 -1.56403</pose>
           <scale>1 1 1</scale>
           <link name='link'>
-            <pose>-2.43597 5.71873 0.5 0 -0 -1.56403</pose>
+            <pose>-2.43597 5.71873 0.5 0 0 -1.56403</pose>
             <velocity>0 0 0 0 -0 0</velocity>
-            <acceleration>-1e-05 1.9e-05 0 -3.9e-05 -2e-05 0</acceleration>
-            <wrench>-1e-05 1.9e-05 0 0 -0 0</wrench>
+            <acceleration>0 0 0 0 -0 0</acceleration>
+            <wrench>0 0 0 0 -0 0</wrench>
           </link>
         </model>
       </model>
@@ -1206,12 +1196,13 @@
                 <size>1 2 1</size>
               </box>
             </geometry>
+
             <material>
-              <ambient>0 0 1 1</ambient>
-              <diffuse>0 0 1 1</diffuse>
-              <specular>0.1 0.1 0.1 1</specular>
-              <emissive>0 0 0 1</emissive>
-            </material>
+            <ambient>0 0 1 1</ambient>   <!-- 藍色 -->
+            <diffuse>0 0 1 1</diffuse>
+            <specular>0.1 0.1 0.1 1</specular>
+            <emissive>0 0 0 1</emissive>
+          </material>
           </visual>
           <self_collide>0</self_collide>
           <inertial>
@@ -1259,12 +1250,14 @@
                 <size>1 2 1</size>
               </box>
             </geometry>
-            <material>
-              <ambient>1 0 0 1</ambient>
-              <diffuse>1 0 0 1</diffuse>
-              <specular>0.1 0.1 0.1 1</specular>
-              <emissive>0 0 0 1</emissive>
-            </material>
+
+          <material>
+            <ambient>1 0 0 1</ambient>   <!-- cred色 -->
+            <diffuse>1 0 0 1</diffuse>
+            <specular>0.1 0.1 0.1 1</specular>
+            <emissive>0 0 0 1</emissive>
+          </material>
+
           </visual>
           <self_collide>0</self_collide>
           <inertial>
@@ -1312,12 +1305,14 @@
                 <size>1 2 1</size>
               </box>
             </geometry>
-            <material>
-              <ambient>0 1 0 1</ambient>
-              <diffuse>0 1 0 1</diffuse>
-              <specular>0.1 0.1 0.1 1</specular>
-              <emissive>0 0 0 1</emissive>
-            </material>
+
+        <material>
+            <ambient>0 1 0 1</ambient>   <!-- green -->
+            <diffuse>0 1 0 1</diffuse>
+            <specular>0.1 0.1 0.1 1</specular>
+            <emissive>0 0 0 1</emissive>
+          </material>
+
           </visual>
           <self_collide>0</self_collide>
           <inertial>
@@ -1365,12 +1360,14 @@
                 <size>1 2 1</size>
               </box>
             </geometry>
-            <material>
-              <ambient>1 1 0 1</ambient>
-              <diffuse>1 1 0 1</diffuse>
-              <specular>0.1 0.1 0.1 1</specular>
-              <emissive>0 0 0 1</emissive>
-            </material>
+
+        <material>
+        <ambient>1 1 0 1</ambient>   <!-- yello -->
+        <diffuse>1 1 0 1</diffuse>
+        <specular>0.1 0.1 0.1 1</specular>
+        <emissive>0 0 0 1</emissive>
+      </material>
+
           </visual>
           <self_collide>0</self_collide>
           <inertial>
@@ -1418,12 +1415,13 @@
                 <size>1 2 1</size>
               </box>
             </geometry>
+
             <material>
-              <ambient>0 1 1 1</ambient>
-              <diffuse>0 1 1 1</diffuse>
-              <specular>0.1 0.1 0.1 1</specular>
-              <emissive>0 0 0 1</emissive>
-            </material>
+            <ambient>0 1 1 1</ambient>   <!-- 青色 -->
+            <diffuse>0 1 1 1</diffuse>
+            <specular>0.1 0.1 0.1 1</specular>
+            <emissive>0 0 0 1</emissive>
+          </material>
           </visual>
           <self_collide>0</self_collide>
           <inertial>
@@ -1471,12 +1469,14 @@
                 <size>1 2 1</size>
               </box>
             </geometry>
-            <material>
-              <ambient>1 0 1 1</ambient>
-              <diffuse>1 0 1 1</diffuse>
-              <specular>0.1 0.1 0.1 1</specular>
-              <emissive>0 0 0 1</emissive>
-            </material>
+
+          <material>
+            <ambient>1 0 1 1</ambient>   <!-- 品紅 -->
+            <diffuse>1 0 1 1</diffuse>
+            <specular>0.1 0.1 0.1 1</specular>
+            <emissive>0 0 0 1</emissive>
+          </material>
+
           </visual>
           <self_collide>0</self_collide>
           <inertial>
@@ -1524,12 +1524,14 @@
                 <size>1 2 1</size>
               </box>
             </geometry>
-            <material>
-              <ambient>1 0.5 0 1</ambient>
-              <diffuse>1 0.5 0 1</diffuse>
-              <specular>0.1 0.1 0.1 1</specular>
-              <emissive>0 0 0 1</emissive>
-            </material>
+
+        <material>
+                <ambient>1 0.5 0 1</ambient>   <!-- 藍色 -->
+                <diffuse>1 0.5 0 1</diffuse>
+                <specular>0.1 0.1 0.1 1</specular>
+                <emissive>0 0 0 1</emissive>
+              </material>
+
           </visual>
           <self_collide>0</self_collide>
           <inertial>
@@ -1577,12 +1579,14 @@
                 <size>1 2 1</size>
               </box>
             </geometry>
-            <material>
-              <ambient>1 1 1 1</ambient>
-              <diffuse>1 1 1 1</diffuse>
-              <specular>0.1 0.1 0.1 1</specular>
-              <emissive>0 0 0 1</emissive>
-            </material>
+
+    <material>
+            <ambient>1 1 1 1</ambient>   <!-- white -->
+            <diffuse>1 1 1 1</diffuse>
+            <specular>0.1 0.1 0.1 1</specular>
+            <emissive>0 0 0 1</emissive>
+          </material>
+
           </visual>
           <self_collide>0</self_collide>
           <inertial>
@@ -1630,12 +1634,14 @@
                 <size>1 2 1</size>
               </box>
             </geometry>
-            <material>
-              <ambient>0 0 0 1</ambient>
-              <diffuse>0 0 0 1</diffuse>
-              <specular>0.1 0.1 0.1 1</specular>
-              <emissive>0 0 0 1</emissive>
-            </material>
+
+        <material>
+        <ambient>0 0 0 1</ambient>   <!-- black -->
+        <diffuse>0 0 0 1</diffuse>
+        <specular>0.1 0.1 0.1 1</specular>
+        <emissive>0 0 0 1</emissive>
+      </material>
+
           </visual>
           <self_collide>0</self_collide>
           <inertial>
@@ -1661,54 +1667,10 @@
     </model>
     <gui fullscreen='0'>
       <camera name='user_camera'>
-        <pose>-1.76941 -2.99193 19.6802 0 1.5258 -1.81895</pose>
+        <pose>2.59365 0.0655 30.6403 1e-06 1.5418 1.45223</pose>
         <view_controller>orbit</view_controller>
         <projection_type>perspective</projection_type>
       </camera>
     </gui>
-    <model name='bed_sign_A'>
-      <static>1</static>
-      <link name='sign_link'>
-        <pose>0 0 1 0 -0 0</pose>
-        <collision name='collision'>
-          <geometry>
-            <box>
-              <size>0.6 0.02 0.4</size>
-            </box>
-          </geometry>
-          <max_contacts>10</max_contacts>
-          <surface>
-            <contact>
-              <ode/>
-            </contact>
-            <bounce/>
-            <friction>
-              <torsional>
-                <ode/>
-              </torsional>
-              <ode/>
-            </friction>
-          </surface>
-        </collision>
-        <visual name='visual'>
-          <geometry>
-            <box>
-              <size>0.6 0.02 0.4</size>
-            </box>
-          </geometry>
-          <material>
-            <script>
-              <uri>model://sign_A/materials/scripts</uri>
-              <uri>model://sign_A/materials/textures</uri>
-              <name>BedSigns/A_sign</name>
-            </script>
-          </material>
-        </visual>
-        <self_collide>0</self_collide>
-        <enable_wind>0</enable_wind>
-        <kinematic>0</kinematic>
-      </link>
-      <pose>0.270519 -3.45502 0 0 -0 0</pose>
-    </model>
   </world>
 </sdf>

@@ -1,0 +1,20 @@
+material BedSigns/A_sign
+{
+  technique
+  {
+    pass
+    {
+      ambient 1 1 1 1          // 讓貼圖不要超暗
+      diffuse 1 1 1 1
+      specular 0 0 0 1 0
+      emissive 0 0 0 1
+      lighting on
+
+      texture_unit
+      {
+        texture letterA.png    // 就是 materials/textures/ 底下那個檔
+        filtering anisotropic
+      }
+    }
+  }
+}

@@ -1,0 +1,41 @@
+<?xml version="1.0" ?>
+<sdf version="1.6">
+  <model name="bed_sign_A">
+    <static>true</static>
+
+    <link name="sign_link">
+      <!-- 牌子整體的位置（插入模型時還可以再移動） -->
+      <pose>0 0 1.0 0 0 0</pose>
+
+      <collision name="collision">
+        <geometry>
+          <!-- 一片薄薄的板子 -->
+          <box>
+            <!-- 寬 x 厚 x 高 -->
+            <size>0.6 0.02 0.4</size>
+          </box>
+        </geometry>
+      </collision>
+
+      <visual name="visual">
+        <geometry>
+          <box>
+            <size>0.6 0.02 0.4</size>
+          </box>
+        </geometry>
+
+        <material>
+          <script>
+            <!-- 告訴 Gazebo 去哪裡找 .material -->
+            <uri>model://sign_A/materials/scripts</uri>
+            <!-- 這行很重要：讓它同時把 textures 資料夾加入搜尋路徑 -->
+            <uri>model://sign_A/materials/textures</uri>
+
+            <!-- 對應 bed_signs.material 裡的 material 名字 -->
+            <name>BedSigns/A_sign</name>
+          </script>
+        </material>
+      </visual>
+    </link>
+  </model>
+</sdf>

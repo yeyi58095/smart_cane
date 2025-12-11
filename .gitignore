@@ -2,6 +2,7 @@
 build/
 install/
 log/
+rosenv/
 
 # Python
 __pycache__/

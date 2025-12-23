@@ -24,5 +24,10 @@ setup(
     maintainer_email='yeyi58095@gmail.com',
     description='Bringup and RViz configs (ament_python)',
     license='MIT',
-    entry_points={},
+    entry_points={
+        'console_scripts': [
+        'initialpose_pub = smart_cane_bringup.initialpose_pub:main',
+        'fix_yolo_shebang = smart_cane_bringup.fix_yolo_shebang:main',
+    ],
+    },
 )

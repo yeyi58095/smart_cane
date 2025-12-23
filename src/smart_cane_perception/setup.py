@@ -23,6 +23,7 @@ setup(
             'color_bed_detector = smart_cane_perception.color_bed_detector:main',
             'multi_bed_detector = smart_cane_perception.multi_bed_detector:main',
             'yolo_sign_detector = smart_cane_perception.yolo_sign_detector:main',
+            'fix_yolo_shebang = smart_cane_perception.fix_yolo_shebang:main',
         ],
     },
 )

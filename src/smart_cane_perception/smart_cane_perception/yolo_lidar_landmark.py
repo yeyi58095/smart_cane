@@ -1,6 +1,8 @@
 import math
 import os
 from dataclasses import dataclass
+from nav_msgs.msg import OccupancyGrid
+from .goal_snapper import GoalSnapper
 
 import rclpy
 from rclpy.node import Node
@@ -24,9 +26,19 @@ DEFAULT_CONF_TH = 0.90
 class Landmark:
     x: float
     y: float
-    count: int
-    conf_avg: float
+    nav_x: float = float('nan')
+    nav_y: float = float('nan')
+    nav_ok: bool = False
+    count: int = 0
+    conf_avg: float = 0.0
 
+    def add_obs(self, x: float, y: float, conf: float):
+        """Update running average for position and confidence."""
+        n = self.count
+        self.x = (self.x * n + x) / (n + 1)
+        self.y = (self.y * n + y) / (n + 1)
+        self.conf_avg = (self.conf_avg * n + conf) / (n + 1)
+        self.count += 1
 
 def yaw_from_quaternion(q):
     x, y, z, w = q.x, q.y, q.z, q.w
@@ -40,11 +52,18 @@ def lidar_range_median(scan: LaserScan, angle: float, window: int = 5):
     if angle < scan.angle_min or angle > scan.angle_max:
         return None
 
+    n = len(scan.ranges)
+    if n == 0:
+        return None
+
     idx_center = int(round((angle - scan.angle_min) / scan.angle_increment))
+    idx_center = max(0, min(n - 1, idx_center))
+
+    window = max(0, int(window))
     vals = []
     for di in range(-window, window + 1):
         idx = idx_center + di
-        if idx < 0 or idx >= len(scan.ranges):
+        if idx < 0 or idx >= n:
             continue
         r = scan.ranges[idx]
         if math.isinf(r) or math.isnan(r):
@@ -59,35 +78,69 @@ def lidar_range_median(scan: LaserScan, angle: float, window: int = 5):
     return vals[len(vals) // 2]
 
 
+
 class YoloLidarLandmarker(Node):
     def __init__(self):
         super().__init__('yolo_lidar_landmarker')
 
-        # params
+        # -----------------------
+        # Declare parameters
+        # -----------------------
         self.declare_parameter('image_topic', '/tb3/camera/image_raw')
         self.declare_parameter('scan_topic', '/scan')
         self.declare_parameter('map_frame', 'map')
         self.declare_parameter('base_frame', 'base_link')
+
         self.declare_parameter('conf_th', DEFAULT_CONF_TH)
-        self.declare_parameter('merge_radius', 0.5)       # meters
-        self.declare_parameter('min_confirm', 5)          # detections to accept
+        self.declare_parameter('merge_radius', 0.5)
+        self.declare_parameter('min_confirm', 5)
         self.declare_parameter('output_path', os.path.expanduser('~/smart_cane/landmarks.txt'))
         self.declare_parameter('yolo_model', os.path.expanduser('~/smart_cane/yolov8n.pt'))
-        self.declare_parameter('classes_allowlist', [])   # empty => all
+        self.declare_parameter('classes_allowlist', [])
         self.declare_parameter('lidar_window', 7)
 
-        self.image_topic = self.get_parameter('image_topic').value
-        self.scan_topic  = self.get_parameter('scan_topic').value
-        self.map_frame   = self.get_parameter('map_frame').value
-        self.base_frame  = self.get_parameter('base_frame').value
+        # ⭐ camera/lidar alignment tweak
+        self.declare_parameter('camera_yaw_offset', 0.0)
 
-        self.conf_th     = float(self.get_parameter('conf_th').value)
+        # costmap / snapping
+        self.declare_parameter('costmap_topic', '/global_costmap/costmap')
+        self.declare_parameter('occ_th', 50)
+        self.declare_parameter('unknown_is_obstacle', True)
+        self.declare_parameter('clearance_m', 0.30)
+        self.declare_parameter('search_radius_m', 2.0)
+
+        # -----------------------
+        # Read parameters
+        # -----------------------
+        self.image_topic = str(self.get_parameter('image_topic').value)
+        self.scan_topic  = str(self.get_parameter('scan_topic').value)
+        self.map_frame   = str(self.get_parameter('map_frame').value)
+        self.base_frame  = str(self.get_parameter('base_frame').value)
+
+        self.conf_th      = float(self.get_parameter('conf_th').value)
         self.merge_radius = float(self.get_parameter('merge_radius').value)
         self.min_confirm  = int(self.get_parameter('min_confirm').value)
         self.output_path  = str(self.get_parameter('output_path').value)
         self.model_path   = str(self.get_parameter('yolo_model').value)
         self.allowlist    = list(self.get_parameter('classes_allowlist').value)
         self.lidar_window = int(self.get_parameter('lidar_window').value)
+
+        self.camera_yaw_offset = float(self.get_parameter('camera_yaw_offset').value)
+
+        self.costmap_topic = str(self.get_parameter('costmap_topic').value)
+
+        # -----------------------
+        # Components
+        # -----------------------
+        self.snapper = GoalSnapper(
+            occ_th=int(self.get_parameter('occ_th').value),
+            unknown_is_obstacle=bool(self.get_parameter('unknown_is_obstacle').value),
+            clearance_m=float(self.get_parameter('clearance_m').value),
+            search_radius_m=float(self.get_parameter('search_radius_m').value),
+        )
+
+        self.create_subscription(OccupancyGrid, self.costmap_topic, self.costmap_callback, 1)
+        self.get_logger().info(f"Listening costmap: {self.costmap_topic}")
 
         self.bridge = CvBridge()
         self.last_scan = None
@@ -96,12 +149,12 @@ class YoloLidarLandmarker(Node):
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
 
-        # YOLO model
+        # YOLO
         self.get_logger().info(f"Loading YOLO model: {self.model_path}")
         self.model = YOLO(self.model_path)
 
         # data
-        self.landmarks = {}  # class_name -> list[Landmark]
+        self.landmarks = {}
 
         # subs
         self.create_subscription(LaserScan, self.scan_topic, self.scan_callback, 10)
@@ -109,16 +162,24 @@ class YoloLidarLandmarker(Node):
 
         self.get_logger().info(f"Listening image: {self.image_topic}")
         self.get_logger().info(f"Listening scan : {self.scan_topic}")
-        self.get_logger().info(f"conf_th={self.conf_th}, merge_radius={self.merge_radius}, min_confirm={self.min_confirm}")
+        self.get_logger().info(
+            f"conf_th={self.conf_th}, merge_radius={self.merge_radius}, "
+            f"min_confirm={self.min_confirm}, yaw_offset={self.camera_yaw_offset}"
+        )
 
     def scan_callback(self, msg: LaserScan):
         self.last_scan = msg
 
+    def costmap_callback(self, msg: OccupancyGrid):
+        self.snapper.set_grid(msg)
+
+
     def save_landmarks(self):
         """
-        Format:
-        class_name: (x,y), (x,y), ...
-        Only save landmarks with count >= min_confirm.
+        Output:
+        class_raw: (x,y), (x,y), ...
+        class_nav: (x,y), (x,y), ...
+        Only keep lm.count >= min_confirm
         """
         try:
             with open(self.output_path, 'w') as f:
@@ -126,16 +187,26 @@ class YoloLidarLandmarker(Node):
                     kept = [lm for lm in lst if lm.count >= self.min_confirm]
                     if not kept:
                         continue
-                    pts = ", ".join([f"({lm.x:.3f},{lm.y:.3f})" for lm in kept])
-                    f.write(f"{cls}: {pts}\n")
+
+                    # raw
+                    raw_pts = ", ".join([f"({lm.x:.3f},{lm.y:.3f})" for lm in kept])
+                    f.write(f"{cls}_raw: {raw_pts}\n")
+
+                    # nav (only nav_ok)
+                    nav_kept = [lm for lm in kept if lm.nav_ok]
+                    if nav_kept:
+                        nav_kept.sort(key=lambda lm: lm.count, reverse=True)
+                        nav_pts = ", ".join([f"({lm.nav_x:.3f},{lm.nav_y:.3f})" for lm in nav_kept])
+                        f.write(f"{cls}_nav: {nav_pts}\n")
         except Exception as e:
             self.get_logger().warn(f"Failed to write landmarks: {e}")
+
 
     def merge_landmark(self, cls: str, x: float, y: float, conf: float):
         if cls not in self.landmarks:
             self.landmarks[cls] = []
 
-        # find nearest existing
+        # find nearest
         best_i = -1
         best_d = None
         for i, lm in enumerate(self.landmarks[cls]):
@@ -146,19 +217,34 @@ class YoloLidarLandmarker(Node):
 
         if best_d is not None and best_d < self.merge_radius:
             lm = self.landmarks[cls][best_i]
+
             n = lm.count
             lm.x = (lm.x * n + x) / (n + 1)
             lm.y = (lm.y * n + y) / (n + 1)
             lm.conf_avg = (lm.conf_avg * n + conf) / (n + 1)
             lm.count += 1
+
         else:
-            self.landmarks[cls].append(Landmark(x=x, y=y, count=1, conf_avg=conf))
+            lm = Landmark(x=x, y=y, count=1, conf_avg=conf)
+            self.landmarks[cls].append(lm)
+
+        # snap (only if costmap ready)
+        try:
+            snapped = self.snapper.snap(lm.x, lm.y)
+        except Exception as e:
+            self.get_logger().warn(f"snap() failed: {e}")
+            snapped = None
+            
+        if snapped is not None:
+            lm.nav_x, lm.nav_y = snapped
+            lm.nav_ok = True
+        else:
+            lm.nav_ok = False
+
 
     def image_callback(self, msg: Image):
         if self.last_scan is None:
-            # don't spam
-            self.get_logger().warn("No LaserScan yet, skip.")
-            return
+            return  # 別噴太吵
 
         try:
             frame = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
@@ -168,19 +254,18 @@ class YoloLidarLandmarker(Node):
 
         H, W, _ = frame.shape
 
-        # TF (map <- base_link) latest
+        # TF latest
         try:
             t = self.tf_buffer.lookup_transform(self.map_frame, self.base_frame, Time())
-        except TransformException as e:
-            self.get_logger().warn(f"TF lookup failed: {e}")
+        except TransformException:
             return
 
         tx = t.transform.translation.x
         ty = t.transform.translation.y
         yaw = yaw_from_quaternion(t.transform.rotation)
 
-        # run YOLO
-        results = self.model.predict(frame, verbose=False)
+        # run YOLO (let YOLO prefilter)
+        results = self.model.predict(frame, verbose=False, conf=self.conf_th)
         if not results:
             return
 
@@ -188,13 +273,10 @@ class YoloLidarLandmarker(Node):
         if r0.boxes is None or len(r0.boxes) == 0:
             return
 
-        names = r0.names  # id->name
+        names = r0.names
 
         for b in r0.boxes:
             conf = float(b.conf[0])
-            if conf < self.conf_th:
-                continue
-
             cls_id = int(b.cls[0])
             cls_name = names.get(cls_id, str(cls_id))
 
@@ -204,30 +286,22 @@ class YoloLidarLandmarker(Node):
             x1, y1, x2, y2 = [float(v) for v in b.xyxy[0]]
             u = (x1 + x2) / 2.0
 
-            # bbox center -> angle
             u_norm = (u - W / 2.0) / (W / 2.0)
-            theta = u_norm * (H_FOV / 2.0)
+            theta = u_norm * (H_FOV / 2.0)  + self.camera_yaw_offset # (若你加了參數)
 
-            # lidar distance
             r = lidar_range_median(self.last_scan, theta, window=self.lidar_window)
             if r is None:
                 continue
 
-            # base_link coords (2D)
             x_bl = r * math.cos(theta)
             y_bl = r * math.sin(theta)
 
-            # map coords
             cos_y = math.cos(yaw)
             sin_y = math.sin(yaw)
             x_map = tx + cos_y * x_bl - sin_y * y_bl
             y_map = ty + sin_y * x_bl + cos_y * y_bl
 
             self.merge_landmark(cls_name, x_map, y_map, conf)
-
-            self.get_logger().info(
-                f"[{cls_name}] conf={conf:.2f} r={r:.2f}m map=({x_map:.2f},{y_map:.2f})"
-            )
 
         self.save_landmarks()
 

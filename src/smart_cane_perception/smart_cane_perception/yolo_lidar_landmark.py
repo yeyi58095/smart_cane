@@ -2,7 +2,7 @@ import math
 import os
 from dataclasses import dataclass
 from nav_msgs.msg import OccupancyGrid
-from .goal_snapper import GoalSnapper
+from smart_cane_landmarks.goal_snapper import GoalSnapper
 
 import rclpy
 from rclpy.node import Node

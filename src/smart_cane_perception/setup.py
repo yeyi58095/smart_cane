@@ -25,7 +25,7 @@ setup(
             'yolo_sign_detector = smart_cane_perception.yolo_sign_detector:main',
             'yolo_lidar_landmark = smart_cane_perception.yolo_lidar_landmark:main',
             'fix_yolo_shebang = smart_cane_perception.fix_yolo_shebang:main',
-            'goto_landmark = smart_cane_perception.goto_landmark:main',
+            # 'goto_landmark = smart_cane_perception.goto_landmark:main',
         ],
     },
 )

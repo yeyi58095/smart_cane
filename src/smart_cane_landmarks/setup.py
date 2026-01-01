@@ -20,6 +20,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
+            'goto_landmark = smart_cane_landmarks.goto_landmark:main',
+            'landmark_visualizer = smart_cane_landmarks.landmark_visualizer:main',
         ],
     },
 )

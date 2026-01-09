@@ -16,6 +16,17 @@ To import the python packages for yolo, a virtual environment was created named 
 
 This package was created for setting up the needed program once with launching, or executable file. `launch/amcl_sim.launch.py` and `initialpose_pub.py` is included, the latter is for publishing the initial coordination. there are serveral steps done during `amcl_sim.launch.py`, step-by-step is, changing the head of the `yolo_sign_detector`, activating the simulation world and robot, activating the navigation2 for amcl, publishing the initial pose for amcl, activating the yolo_node and so on.
 
+### This detail and function each file executing
+
+* `launch/amcl_sim.launch.py`: To activate the node what necessary for amcl-ing and navigating, image recognition without labeling and recording was also be added in it. The order of activating the node is
+  * `fix_shebang`: changing the head for yolo-related files.
+  * `sim_world`: activiating the simulation world, and placing the turtlebot onto the world.
+  * `nav2`: activiating the navigation-related commends, written by ros2 developers.
+  * `initialpose`: we need to publish the initial position of the turtlebot initially.
+  * `yolo_node`: detecting the surrounding objects.
+  * `rviz_node`: activiating the rviz node that parameter had been setted.
+
+
 ## `smart_cane_landmarks`
 
 This package is related to LANDMARK, including filtering the all possible position detected by LiDAR and camera, which done by `goal_snapper.py`, navigating to the designated landmark by user, which done by `goto_landmark.py`, and publish the marker so that the corrdination in `landmarks.txt` can be shown on the rivz, which done by `landmark_visualzer.py`.

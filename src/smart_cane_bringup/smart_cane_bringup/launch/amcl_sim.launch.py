@@ -7,6 +7,11 @@ from launch_ros.substitutions import FindPackageShare
 from launch import LaunchDescription
 from launch.actions import ExecuteProcess
 from launch_ros.actions import Node
+from launch_ros.actions import Node
+from ament_index_python.packages import get_package_share_directory
+import os
+
+
 
 def generate_launch_description():
     sim_world = IncludeLaunchDescription(
@@ -50,6 +55,20 @@ def generate_launch_description():
         output='screen'
     )
 
+    rviz_config = os.path.join(
+        get_package_share_directory('smart_cane_bringup'),
+        'rviz',
+        'amcl_with_landmark_shown_or_creating.rviz'
+    )
+
+    rviz_node = Node(
+        package='rviz2',
+        executable='rviz2',
+        name='rviz2',
+        arguments=['-d', rviz_config],
+        output='screen'
+    )
+
     yolo_node = Node(
         package='smart_cane_perception',
         executable='yolo_sign_detector',
@@ -62,4 +81,5 @@ def generate_launch_description():
         nav2,
         initialpose,
         yolo_node,
+        rviz_node,
     ])

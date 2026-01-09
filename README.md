@@ -25,7 +25,15 @@ This package was created for setting up the needed program once with launching, 
   * `initialpose`: we need to publish the initial position of the turtlebot initially.
   * `yolo_node`: detecting the surrounding objects.
   * `rviz_node`: activiating the rviz node that parameter had been setted.
-
+ 
+* `rviz/amcl_with_landmark_shown_or_creating.rviz`: Including the chosen topics with initializated. Including
+  * `LaserScan`
+  * `Image`
+  * `Map`
+  * `Polygon`: show the robot position
+  * `Path`
+  * `MarkerArray`
+  and so on.
 
 ## `smart_cane_landmarks`
 

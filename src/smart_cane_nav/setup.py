@@ -20,5 +20,7 @@ setup(
     maintainer_email='yeyi58095@gmail.com',
     description='Nav2 (SLAM mode) for smart_cane',
     license='MIT',
-    entry_points={'console_scripts': []},
+    entry_points={'console_scripts': [
+        'nav_cmd_vel_ui = smart_cane_nav.nav_cmd_vel_ui:main',
+    ]},
 )

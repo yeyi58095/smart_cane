@@ -22,7 +22,7 @@ This package was created for setting up the needed program once with launching, 
   * `fix_shebang`: changing the head for yolo-related files.
   * `sim_world`: activiating the simulation world, and placing the turtlebot onto the world.
   * `nav2`: activiating the navigation-related commends, written by ros2 developers.
-  * `initialpose`: we need to publish the initial position of the turtlebot initially.
+  * `initialpose`: we need to publish the initial position of the turtlebot initially.  (this had been replaced to under `sim_world.launch`)
   * `yolo_node`: detecting the surrounding objects.
   * `rviz_node`: activiating the rviz node that parameter had been setted.
  
@@ -40,3 +40,15 @@ This package was created for setting up the needed program once with launching, 
 This package is related to LANDMARK, including filtering the all possible position detected by LiDAR and camera, which done by `goal_snapper.py`, navigating to the designated landmark by user, which done by `goto_landmark.py`, and publish the marker so that the corrdination in `landmarks.txt` can be shown on the rivz, which done by `landmark_visualzer.py`.
 
 The form for using `goto_landmark.py` is `ros2 run smart_cane_landmarks DESTINATION`
+
+## `smart_cane_nav`
+
+This package is related to navigation, including launching the fils in nav2_bringup written by other developers, and some file I wrote for indicating the direction published by `/cmd_vel` or `/nav_cmd_vel` which I defined self-ly.
+
+### The detail of each file included this package
+
+`launch/nav2_autonomy.launch.py` and `launch/nav2_guidance.launch.py`: Both of these are for applying method `nav2_bringup` offering. But the former publish `/cmd_vel` and control tb3 directly, and the latter publish `/nav_cmd_vel` for indicating the inforation about direction to user with piping with other file majorly.
+
+`qt_cmd_vel_ui.py`: Offer the GUI for user to visualize the direction and the (angle) vecolity that `/nav_cmd_vel` indicating. Also, user can publish the `/cmd_vel` to control the tb3 actually.
+
+`nav_cmd_vel_ui.py`: Just only indicating the orientation in CLI interface.

@@ -20,6 +20,11 @@ def generate_launch_description():
             'slam': 'False',
             'autostart': 'True',
             'map': '/home/daniel/smart_cane/maps/new_hospital_map.yaml',
+            'params_file': PathJoinSubstitution([
+                FindPackageShare('smart_cane_nav'),
+                'params',
+                'nav2_amcl.yaml'
+            ]),
         }.items()
     )
 

@@ -22,5 +22,6 @@ setup(
     license='MIT',
     entry_points={'console_scripts': [
         'nav_cmd_vel_ui = smart_cane_nav.nav_cmd_vel_ui:main',
+        'qt_cmd_vel_ui = smart_cane_nav.qt_cmd_vel_ui:main',
     ]},
 )

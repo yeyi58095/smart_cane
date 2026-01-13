@@ -6,6 +6,19 @@ from launch_ros.substitutions import FindPackageShare
 from launch_ros.parameter_descriptions import ParameterValue
 from launch.substitutions import Command
 
+from launch import LaunchDescription
+from launch.actions import IncludeLaunchDescription
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch_ros.actions import Node
+from launch.substitutions import PathJoinSubstitution
+from launch_ros.substitutions import FindPackageShare
+from launch import LaunchDescription
+from launch.actions import ExecuteProcess
+from launch_ros.actions import Node
+from launch_ros.actions import Node
+from ament_index_python.packages import get_package_share_directory
+import os
+
 
 def generate_launch_description():
     # 選擇 world 的參數（跟原本一樣）
@@ -79,11 +92,19 @@ def generate_launch_description():
         output='screen'
     )
 
+    initialpose = Node(
+        package='smart_cane_bringup',
+        executable='initialpose_pub',
+        output='screen',
+        parameters=[{'use_sim_time': True}]
+    )
+
     return LaunchDescription([
         world_arg,
         set_tb3,
         set_model_path,
         gz,
         rsp,
-        spawn
+        spawn,
+        initialpose,
     ])

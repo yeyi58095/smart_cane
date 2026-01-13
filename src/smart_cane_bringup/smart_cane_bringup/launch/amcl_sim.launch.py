@@ -79,7 +79,7 @@ def generate_launch_description():
         fix_shebang,
         sim_world,
         nav2,
-        initialpose,
+        # initialpose,
         yolo_node,
         rviz_node,
     ])

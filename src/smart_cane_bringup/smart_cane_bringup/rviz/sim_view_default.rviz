@@ -4,10 +4,11 @@ Panels:
     Name: Displays
     Property Tree Widget:
       Expanded:
+        - /Global Options1
         - /Map1
         - /Map1/Topic1
       Splitter Ratio: 0.5
-    Tree Height: 784
+    Tree Height: 520
 Visualization Manager:
   Class: ""
   Displays:
@@ -21,6 +22,8 @@ Visualization Manager:
         base_link:
           Value: true
         base_scan:
+          Value: true
+        camera_link:
           Value: true
         caster_back_link:
           Value: true
@@ -46,6 +49,8 @@ Visualization Manager:
               base_link:
                 base_scan:
                   {}
+                camera_link:
+                  {}
                 caster_back_link:
                   {}
                 imu_link:
@@ -67,7 +72,7 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: ""
-      Enabled: true
+      Enabled: false
       Links:
         All Links Enabled: true
         Expand Joint Details: false
@@ -77,7 +82,7 @@ Visualization Manager:
       Name: RobotModel
       TF Prefix: ""
       Update Interval: 0
-      Value: true
+      Value: false
       Visual Enabled: true
     - Alpha: 1
       Autocompute Intensity Bounds: true
@@ -132,10 +137,75 @@ Visualization Manager:
         Value: /map_updates
       Use Timestamp: false
       Value: true
+    - Alpha: 1
+      Axes Length: 1
+      Axes Radius: 0.10000000149011612
+      Class: rviz_default_plugins/PoseWithCovariance
+      Color: 255; 25; 0
+      Covariance:
+        Orientation:
+          Alpha: 0.5
+          Color: 255; 255; 127
+          Color Style: Unique
+          Frame: Local
+          Offset: 1
+          Scale: 1
+          Value: true
+        Position:
+          Alpha: 0.30000001192092896
+          Color: 204; 51; 204
+          Scale: 1
+          Value: true
+        Value: true
+      Enabled: true
+      Head Length: 0.30000001192092896
+      Head Radius: 0.10000000149011612
+      Name: PoseWithCovariance
+      Shaft Length: 1
+      Shaft Radius: 0.05000000074505806
+      Shape: Arrow
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /initialpose
+      Value: true
+    - Class: rviz_default_plugins/Image
+      Enabled: true
+      Max Value: 1
+      Median window: 5
+      Min Value: 0
+      Name: Image
+      Normalize Range: true
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /tb3/camera/image_raw
+      Value: true
+    - Class: rviz_default_plugins/MarkerArray
+      Enabled: true
+      Name: MarkerArray
+      Namespaces:
+        bird_nav_pt: true
+        bird_nav_txt: true
+        bus_nav_pt: true
+        bus_nav_txt: true
+        motorcycle_nav_pt: true
+        motorcycle_nav_txt: true
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /landmark_markers
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
-    Fixed Frame: odom
+    Fixed Frame: map
     Frame Rate: 30
   Name: root
   Tools:
@@ -154,25 +224,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 24.46580696105957
+      Distance: 16.2027530670166
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 1.1864954233169556
-        Y: 0.3521804213523865
-        Z: 2.076629638671875
+        X: 2.880462884902954
+        Y: 0.5141305923461914
+        Z: 1.637710690498352
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.7403978109359741
+      Pitch: 1.3653974533081055
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz_default_plugins)
-      Yaw: 5.178584575653076
+      Yaw: 6.1535844802856445
     Saved: ~
 Window Geometry:
   Displays:
@@ -180,7 +250,9 @@ Window Geometry:
   Height: 940
   Hide Left Dock: false
   Hide Right Dock: false
-  QMainWindow State: 000000ff00000000fd00000001000000000000015600000391fc0200000001fb000000100044006900730070006c006100790073000000003b00000391000000c700ffffff000004b80000035600000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  Image:
+    collapsed: false
+  QMainWindow State: 000000ff00000000fd00000001000000000000015600000356fc0200000002fb000000100044006900730070006c006100790073010000003b00000289000000c700fffffffb0000000a0049006d00610067006501000002ca000000c70000002800ffffff0000035c0000035600000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
   Width: 1208
-  X: -52
-  Y: 77
+  X: 2928
+  Y: -32

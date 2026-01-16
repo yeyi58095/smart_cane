@@ -14,7 +14,7 @@ from action_msgs.msg import GoalStatusArray
 from PyQt5.QtWidgets import QApplication, QWidget
 from PyQt5.QtCore import Qt, QTimer, QPointF
 from PyQt5.QtGui import QPainter, QPen, QColor, QPolygonF, QFont
-
+from std_msgs.msg import String
 
 # ===================== ROS NODE =====================
 class CmdVelBridge(Node):
@@ -36,9 +36,18 @@ class CmdVelBridge(Node):
         self._pulse_failed = False
         self._pulse_canceled = False
 
+        self.collision_state = ""
+        self.state_sub = self.create_subscription(String, '/collision_state', self.state_cb, 10)
+
+
     def nav_cb(self, msg: Twist):
         self.nav_vx = float(msg.linear.x)
         self.nav_wz = float(msg.angular.z)
+
+    def state_cb(self, msg: String):
+        # collision_guidance 發空字串代表解除
+        self.collision_state = (msg.data or "").strip()
+
 
     def status_cb(self, msg: GoalStatusArray):
         # 4 SUCCEEDED, 5 CANCELED, 6 ABORTED
@@ -177,8 +186,13 @@ class Joystick(QWidget):
 
     def mousePressEvent(self, e):
         if e.button() == Qt.LeftButton:
-            self.pressed = True
+            # 只允許在上半圓開始控制
+            if self.in_circle(e.x(), e.y()):
+                self.pressed = True
+            else:
+                self.pressed = False
             self.update()
+
 
     def mouseReleaseEvent(self, e):
         if e.button() == Qt.LeftButton:
@@ -186,8 +200,18 @@ class Joystick(QWidget):
             self.stop_robot()
             self.update()
 
-    def in_circle(self, x, y):
+    def in_upper_circle(self, x, y):
+        # 只允許上半圓（含直徑線）
+        if y > self.cy:
+            return False
         return (x - self.cx) ** 2 + (y - self.cy) ** 2 <= self.R ** 2
+
+    def in_circle(self, x, y):
+        # 只允許上半圓（含直徑線）
+        # if y > self.cy:
+        #    return False
+        # return (x - self.cx) ** 2 + (y - self.cy) ** 2 <= self.R ** 2
+        return self.in_upper_circle(x, y)
 
     # ---------- mapping ----------
     def clamp01(self, x: float) -> float:
@@ -207,14 +231,20 @@ class Joystick(QWidget):
 
     def mouse_dir_and_rawmag(self):
         dx = self.mx - self.cx
-        dy = self.cy - self.my  # y up
+
+        # ★ 上半圓限制：若滑鼠跑到下半部，直接投影到直徑線 y=cy
+        my_clamped = self.my if self.my <= self.cy else self.cy
+        dy = self.cy - my_clamped  # y up, always >= 0
+
         r = math.hypot(dx, dy)
         if r < 1e-6:
             return 0.0, 0.0, 0.0
-        mag_raw = self.clamp01(r / self.R)  # clamp at edge (saturate)
+
+        mag_raw = self.clamp01(r / self.R)
         ux = dx / r
         uy = dy / r
         return ux, uy, mag_raw
+
 
     def mag_cmd_from_raw(self, mag_raw: float) -> float:
         if mag_raw < self.deadzone:
@@ -233,7 +263,7 @@ class Joystick(QWidget):
         ux, uy, mag_raw = self.mouse_dir_and_rawmag()
         mag_cmd = self.mag_cmd_from_raw(mag_raw)
         vx = self.v_max * mag_cmd * uy
-        wz = self.w_max * mag_cmd * ux
+        wz = - self.w_max * mag_cmd * ux
         return vx, wz, mag_raw, mag_cmd, ux, uy
 
     # ---------- main loop ----------
@@ -267,7 +297,7 @@ class Joystick(QWidget):
             self.draw_arrow(p, ux, uy, mag_raw, color)
 
         # green arrow (on top)
-        nav_x = 0.0 if self.w_max <= 1e-9 else (self.node.nav_wz / self.w_max)
+        nav_x = 0.0 if self.w_max <= 1e-9 else -(self.node.nav_wz / self.w_max)
         nav_y = 0.0 if self.v_max <= 1e-9 else (self.node.nav_vx / self.v_max)
         nav_mag = math.hypot(nav_x, nav_y)
         if nav_mag > 1e-6:
@@ -290,42 +320,120 @@ class Joystick(QWidget):
         # self.draw_status_badge(p)
 
     def draw_grid(self, p: QPainter):
-        # spokes
-        p.setPen(QPen(QColor(210, 210, 210), max(1, int(1*self.scale))))
-        for i in range(self.spokes):
-            ang = (2 * math.pi) * (i / self.spokes)
+        # ----- styles -----
+        thin = max(1, int(1*self.scale))
+        mid  = max(2, int(2*self.scale))
+
+        # ----- outer semicircle (just the boundary) -----
+        p.setPen(QPen(QColor(150, 150, 150), mid))
+        # QRect: (cx-R, cy-R, 2R, 2R), startAngle=0, span=180deg (counterclockwise)
+        # In Qt: angles are 1/16 degree, 0 at 3 o'clock, CCW positive.
+        rect_x = self.cx - self.R
+        rect_y = self.cy - self.R
+        rect_w = 2 * self.R
+        rect_h = 2 * self.R
+        p.drawArc(rect_x, rect_y, rect_w, rect_h, 0 * 16, 180 * 16)
+
+        # ----- spokes (only upper half) -----
+        p.setPen(QPen(QColor(210, 210, 210), thin))
+        for i in range(self.spokes + 1):
+            # i=0..spokes : from left(-pi) to right(0) across top
+            ang = math.pi * (i / self.spokes)  # 0..pi
+            # convert to math coords: ang measured from +x toward +y (CCW)
             x2 = self.cx + math.cos(ang) * self.R
-            y2 = self.cy + math.sin(ang) * self.R
+            y2 = self.cy - math.sin(ang) * self.R
             p.drawLine(int(self.cx), int(self.cy), int(x2), int(y2))
 
-        # rings
-        p.setPen(QPen(Qt.gray, max(2, int(2*self.scale))))
+        # ----- rings (only upper half, exponential spacing) -----
+        p.setPen(QPen(QColor(170, 170, 170), mid))
         for i in range(1, self.rings + 1):
             s = (i / self.rings) * self.exp_s_max
             x = self.exp_radius_from_s(s)
             raw = self.deadzone + (1.0 - self.deadzone) * x
             rr = int(self.R * raw)
-            p.drawEllipse(self.cx - rr, self.cy - rr, 2 * rr, 2 * rr)
 
-        # deadzone
-        p.setPen(QPen(QColor(160, 160, 160), max(1, int(1*self.scale)), Qt.DashLine))
+            # draw semicircle arc of radius rr
+            rx = self.cx - rr
+            ry = self.cy - rr
+            rw = 2 * rr
+            rh = 2 * rr
+            p.drawArc(rx, ry, rw, rh, 0 * 16, 180 * 16)
+
+        # ----- deadzone semicircle -----
+        p.setPen(QPen(QColor(160, 160, 160), thin, Qt.DashLine))
         rr = int(self.R * self.deadzone)
-        p.drawEllipse(self.cx - rr, self.cy - rr, 2 * rr, 2 * rr)
+        rx = self.cx - rr
+        ry = self.cy - rr
+        rw = 2 * rr
+        rh = 2 * rr
+        p.drawArc(rx, ry, rw, rh, 0 * 16, 180 * 16)
 
-        # axes
-        p.setPen(QPen(QColor(160, 160, 160), max(2, int(2*self.scale))))
+        # ----- axes (horizontal full diameter, vertical only upward) -----
+        p.setPen(QPen(QColor(150, 150, 150), mid))
+        # horizontal line across diameter
         p.drawLine(self.cx - self.R, self.cy, self.cx + self.R, self.cy)
-        p.drawLine(self.cx, self.cy - self.R, self.cx, self.cy + self.R)
+        # vertical line only upwards
+        p.drawLine(self.cx, self.cy, self.cx, self.cy - self.R)
 
-        # labels
+        # ----- axis labels -----
         p.setPen(QPen(QColor(110, 110, 110), 1))
         font = QFont()
         font.setPointSize(max(9, int(10 * self.scale)))
         p.setFont(font)
+
         p.drawText(self.cx + self.R - int(92*self.scale), self.cy - int(8*self.scale), f"+w {self.w_max:.2f}")
         p.drawText(self.cx - self.R + int(8*self.scale),  self.cy - int(8*self.scale), f"-w {self.w_max:.2f}")
         p.drawText(self.cx + int(8*self.scale), self.cy - self.R + int(22*self.scale), f"+v {self.v_max:.2f}")
-        p.drawText(self.cx + int(8*self.scale), self.cy + self.R - int(8*self.scale),  f"-v {self.v_max:.2f}")
+
+        # ----- ticks (0.25/0.5/0.75/1.0) on the axes -----
+        p.setPen(QPen(QColor(140, 140, 140), thin))
+        for frac in [0.25, 0.5, 0.75, 1.0]:
+            x = self.disp_mag_from_cmdmag(frac)  # 0..1 in display space
+            rr = int(self.R * (self.deadzone + (1.0 - self.deadzone) * x))
+
+            # ticks on +w and -w
+            p.drawLine(self.cx + rr, self.cy - int(6*self.scale), self.cx + rr, self.cy + int(6*self.scale))
+            p.drawLine(self.cx - rr, self.cy - int(6*self.scale), self.cx - rr, self.cy + int(6*self.scale))
+
+            # ticks on +v (up only)
+            p.drawLine(self.cx - int(6*self.scale), self.cy - rr, self.cx + int(6*self.scale), self.cy - rr)
+
+            # spokes
+            p.setPen(QPen(QColor(210, 210, 210), max(1, int(1*self.scale))))
+            for i in range(self.spokes):
+                ang = (2 * math.pi) * (i / self.spokes)
+                x2 = self.cx + math.cos(ang) * self.R
+                y2 = self.cy + math.sin(ang) * self.R
+                p.drawLine(int(self.cx), int(self.cy), int(x2), int(y2))
+
+            # rings
+            p.setPen(QPen(Qt.gray, max(2, int(2*self.scale))))
+            for i in range(1, self.rings + 1):
+                s = (i / self.rings) * self.exp_s_max
+                x = self.exp_radius_from_s(s)
+                raw = self.deadzone + (1.0 - self.deadzone) * x
+                rr = int(self.R * raw)
+                p.drawEllipse(self.cx - rr, self.cy - rr, 2 * rr, 2 * rr)
+
+            # deadzone
+            p.setPen(QPen(QColor(160, 160, 160), max(1, int(1*self.scale)), Qt.DashLine))
+            rr = int(self.R * self.deadzone)
+            p.drawEllipse(self.cx - rr, self.cy - rr, 2 * rr, 2 * rr)
+
+            # axes
+            p.setPen(QPen(QColor(160, 160, 160), max(2, int(2*self.scale))))
+            p.drawLine(self.cx - self.R, self.cy, self.cx + self.R, self.cy)
+            p.drawLine(self.cx, self.cy - self.R, self.cx, self.cy + self.R)
+
+            # labels
+            p.setPen(QPen(QColor(110, 110, 110), 1))
+            font = QFont()
+            font.setPointSize(max(9, int(10 * self.scale)))
+            p.setFont(font)
+            p.drawText(self.cx + self.R - int(92*self.scale), self.cy - int(8*self.scale), f"+w {self.w_max:.2f}")
+            p.drawText(self.cx - self.R + int(8*self.scale),  self.cy - int(8*self.scale), f"-w {self.w_max:.2f}")
+            p.drawText(self.cx + int(8*self.scale), self.cy - self.R + int(22*self.scale), f"+v {self.v_max:.2f}")
+            p.drawText(self.cx + int(8*self.scale), self.cy + self.R - int(8*self.scale),  f"-v {self.v_max:.2f}")
 
     def draw_top_status_bar(self, p: QPainter):
         # bar area
@@ -340,7 +448,17 @@ class Joystick(QWidget):
         p.drawRoundedRect(bx, by, bw, bh, 12, 12)
 
         # text
-        if self.status_text:
+        # Collision Avioding
+        if self.node.collision_state:
+            p.setPen(QPen(QColor(200, 0, 0), max(2, int(2 * self.scale))))
+            font = QFont()
+            font.setPointSize(max(11, int(12 * self.scale)))
+            font.setBold(True)
+            p.setFont(font)
+            p.drawText(bx + int(14 * self.scale), by + int(28 * self.scale),
+                    self.node.collision_state)
+        elif self.status_text:
+            # Nav Status
             p.setPen(QPen(self.status_color, max(2, int(2 * self.scale))))
             font = QFont()
             font.setPointSize(max(11, int(12 * self.scale)))

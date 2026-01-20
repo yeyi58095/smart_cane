@@ -16,6 +16,7 @@ setup(
         # rviz/launch 安裝到 share/<pkg> 下
         (os.path.join('share', package_name, 'launch'), glob('smart_cane_bringup/launch/*.py')),
         (os.path.join('share', package_name, 'rviz'), glob('smart_cane_bringup/rviz/*.rviz')),
+        (os.path.join('share', package_name, 'config'), glob('smart_cane_bringup/config/*.yaml')),
         (os.path.join('share', package_name, 'resource'), ['resource/' + package_name]),
     ],
     install_requires=['setuptools'],

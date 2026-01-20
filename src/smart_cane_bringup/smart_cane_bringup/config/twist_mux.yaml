@@ -1,0 +1,19 @@
+twist_mux:
+  ros__parameters:
+    topics:
+      nav:
+        topic: /cmd_vel_nav
+        timeout: 0.5
+        priority: 10
+      align:
+        topic: /cmd_vel_align
+        timeout: 0.2
+        priority: 100
+
+    # 沒用 locks 也可以，但 Foxy 有時候不愛空 dict
+    # 建議至少放一個 dummy lock（不會真的用到）
+    locks:
+      dummy:
+        topic: /twist_mux/lock_dummy
+        timeout: 0.0
+        priority: 255

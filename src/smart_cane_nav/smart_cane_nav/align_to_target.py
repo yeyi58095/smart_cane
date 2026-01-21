@@ -19,19 +19,18 @@ def clamp(x, lo, hi):
 
 class AlignToTarget(Node):
     """
-    Visual override controller with mux-friendly behavior:
+    Visual override controller for twist_mux arbitration.
 
-    - Publishes ONLY to cmd_topic (default: /cmd_vel_align)
-    - Does NOT publish when:
-        * not enabled, or
-        * target not seen, or
-        * target lost > lost_timeout (release)
-      => twist_mux will fall back to nav automatically.
-    - On ARRIVED: publish stop, print, and exit process cleanly.
+    Publishes ONLY to cmd_topic (default: /cmd_vel_align).
+    Does NOT publish when not needed (so mux can fall back to nav).
 
-    Control inputs:
-      /align/enable (std_msgs/Bool)
-      /align/target_class (std_msgs/String)
+    Topics:
+      Sub:
+        /align/enable (Bool)
+        /align/target_class (String)
+        /align/nav_done (Bool)         # nav2 reached coarse goal => allow SEARCHING
+      Pub:
+        /align/status (String)         # IDLE/TRACKING/LOST/SEARCHING/ARRIVED/NOT_FOUND
     """
 
     def __init__(self):
@@ -43,28 +42,42 @@ class AlignToTarget(Node):
         self.declare_parameter('image_topic', '/tb3/camera/image_raw')
         self.declare_parameter('cmd_topic', '/cmd_vel_align')
 
-        self.declare_parameter('target_class', 'bus')  # default (will be overwritten by /align/target_class)
+        self.declare_parameter('target_class', 'bus')
         self.declare_parameter('yolo_model', os.path.expanduser('~/smart_cane/yolov8n.pt'))
-        self.declare_parameter('conf_th', 0.6)
+
+        # Two-stage threshold:
+        # - detect_th: consider "seen" if conf >= detect_th
+        # - control_th: allow forward/arrived only if conf >= control_th
+        self.declare_parameter('detect_th', 0.4)
+        self.declare_parameter('control_th', 0.6)
 
         # angular control
-        self.declare_parameter('Kp_ang', 0.8)
+        self.declare_parameter('Kp_ang', 0.9)
         self.declare_parameter('max_w', 1.2)
-        self.declare_parameter('center_tol_norm', 0.06)  # normalized pixel error tolerance for "aligned"
+        self.declare_parameter('center_tol_norm', 0.07)  # bbox center tolerance (normalized)
 
-        # linear control (image-based distance proxy)
-        self.declare_parameter('area_target', 25000.0)
-        self.declare_parameter('area_min', 3000.0)
-        self.declare_parameter('Kp_lin', 0.00004)
-        self.declare_parameter('max_v', 0.15)
+        # linear control (image proxy distance by bbox area)
+        self.declare_parameter('area_target', 18000.0)   # ARRIVED threshold (tune)
+        self.declare_parameter('area_min', 2500.0)       # ignore tiny far bbox
+        self.declare_parameter('Kp_lin', 0.00005)
+        self.declare_parameter('max_v', 0.16)
 
-        # takeover / release
+        # tracking release (during nav)
         self.declare_parameter('lost_timeout', 3.0)  # seconds
-        self.declare_parameter('arrive_hold_sec', 0.4)  # hold stop for a short time before exit
 
-        # topics for enable / target
+        # searching (only when nav_done=True)
+        self.declare_parameter('search_w', 0.6)            # rad/s rotation during search
+        self.declare_parameter('search_max_sec', 11.0)     # ~one circle
+        self.declare_parameter('search_start_delay', 0.2)  # avoid immediate search on tiny dropouts
+
+        # arrived exit hold
+        self.declare_parameter('arrive_hold_sec', 0.4)
+
+        # control topics
         self.declare_parameter('enable_topic', '/align/enable')
         self.declare_parameter('target_topic', '/align/target_class')
+        self.declare_parameter('nav_done_topic', '/align/nav_done')
+        self.declare_parameter('status_topic', '/align/status')
 
         # -----------------------------
         # Read parameters
@@ -74,7 +87,9 @@ class AlignToTarget(Node):
 
         self.target_class = str(self.get_parameter('target_class').value)
         self.model_path = str(self.get_parameter('yolo_model').value)
-        self.conf_th = float(self.get_parameter('conf_th').value)
+
+        self.detect_th = float(self.get_parameter('detect_th').value)
+        self.control_th = float(self.get_parameter('control_th').value)
 
         self.Kp_ang = float(self.get_parameter('Kp_ang').value)
         self.max_w = float(self.get_parameter('max_w').value)
@@ -86,10 +101,17 @@ class AlignToTarget(Node):
         self.max_v = float(self.get_parameter('max_v').value)
 
         self.lost_timeout = float(self.get_parameter('lost_timeout').value)
+
+        self.search_w = float(self.get_parameter('search_w').value)
+        self.search_max_sec = float(self.get_parameter('search_max_sec').value)
+        self.search_start_delay = float(self.get_parameter('search_start_delay').value)
+
         self.arrive_hold_sec = float(self.get_parameter('arrive_hold_sec').value)
 
         self.enable_topic = str(self.get_parameter('enable_topic').value)
         self.target_topic = str(self.get_parameter('target_topic').value)
+        self.nav_done_topic = str(self.get_parameter('nav_done_topic').value)
+        self.status_topic = str(self.get_parameter('status_topic').value)
 
         # -----------------------------
         # ROS interfaces
@@ -97,9 +119,11 @@ class AlignToTarget(Node):
         self.bridge = CvBridge()
         self.cmd_pub = self.create_publisher(Twist, self.cmd_topic, 10)
 
+        self.status_pub = self.create_publisher(String, self.status_topic, 10)
         self.create_subscription(Image, self.image_topic, self.image_cb, 10)
         self.create_subscription(Bool, self.enable_topic, self.enable_cb, 10)
         self.create_subscription(String, self.target_topic, self.target_cb, 10)
+        self.create_subscription(Bool, self.nav_done_topic, self.nav_done_cb, 10)
 
         # -----------------------------
         # YOLO
@@ -111,16 +135,51 @@ class AlignToTarget(Node):
         # State
         # -----------------------------
         self.enabled = False
+        self.nav_done = False
+
         self.last_seen_time = None
         self.tracking = False
+
+        self.searching = False
+        self.search_start_time = None
+        self.last_missing_time = None
+
         self._exit_armed = False
         self._exit_at = None
 
+        self._status = "IDLE"
+        self._last_rotate_only_log = 0.0
+
+        self._set_status("IDLE")
+
         self.get_logger().info(
-            f"[align_to_target] ready. cmd_topic='{self.cmd_topic}', "
-            f"image='{self.image_topic}', enable_topic='{self.enable_topic}', target_topic='{self.target_topic}', "
-            f"default target='{self.target_class}'"
+            f"[align_to_target] ready. target='{self.target_class}', detect_th={self.detect_th}, control_th={self.control_th}, "
+            f"cmd='{self.cmd_topic}', image='{self.image_topic}'"
         )
+
+    # -----------------------------
+    def _set_status(self, s: str):
+        if s != self._status:
+            self._status = s
+            msg = String()
+            msg.data = s
+            self.status_pub.publish(msg)
+
+    def _stop_once(self):
+        tw = Twist()
+        tw.linear.x = 0.0
+        tw.angular.z = 0.0
+        self.cmd_pub.publish(tw)
+
+    def _reset_runtime_state(self):
+        self.last_seen_time = None
+        self.tracking = False
+        self.searching = False
+        self.search_start_time = None
+        self.last_missing_time = None
+        self._exit_armed = False
+        self._exit_at = None
+        self._last_rotate_only_log = 0.0
 
     # -----------------------------
     def enable_cb(self, msg: Bool):
@@ -129,19 +188,27 @@ class AlignToTarget(Node):
 
         if self.enabled and not prev:
             self.get_logger().info("🟢 align enabled")
-            # reset tracking state
-            self.last_seen_time = None
-            self.tracking = False
-            self._exit_armed = False
-            self._exit_at = None
+            self._reset_runtime_state()
+            self._set_status("IDLE")
 
         if (not self.enabled) and prev:
-            self.get_logger().info("⚪ align disabled (release to nav)")
+            self.get_logger().info("⚪ align disabled (release)")
             self._stop_once()
-            self.last_seen_time = None
-            self.tracking = False
-            self._exit_armed = False
-            self._exit_at = None
+            self._reset_runtime_state()
+            self._set_status("IDLE")
+
+    def nav_done_cb(self, msg: Bool):
+        prev = self.nav_done
+        self.nav_done = bool(msg.data)
+
+        if self.nav_done and not prev:
+            self.get_logger().info("🧭 nav_done=True (if target not visible => SEARCHING allowed)")
+
+        if (not self.nav_done) and prev:
+            self.get_logger().info("🧭 nav_done=False")
+            self.searching = False
+            self.search_start_time = None
+            self.last_missing_time = None
 
     def target_cb(self, msg: String):
         s = (msg.data or "").strip()
@@ -150,25 +217,21 @@ class AlignToTarget(Node):
         if s != self.target_class:
             self.target_class = s
             self.get_logger().info(f"🎯 target_class set to '{self.target_class}'")
-            # reset tracking state when target changes
-            self.last_seen_time = None
-            self.tracking = False
-            self._exit_armed = False
-            self._exit_at = None
+            self._reset_runtime_state()
+            self._set_status("IDLE")
 
     # -----------------------------
     def image_cb(self, msg: Image):
         now = time.time()
 
-        # If we have armed exit, hold stop a bit then exit cleanly
+        # delayed shutdown after ARRIVED
         if self._exit_armed:
             if self._exit_at is not None and now >= self._exit_at:
-                # exit process cleanly
                 rclpy.shutdown()
             return
 
         if not self.enabled:
-            return  # do nothing, nav controls
+            return
 
         try:
             frame = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
@@ -178,37 +241,41 @@ class AlignToTarget(Node):
         H, W, _ = frame.shape
         cx = W / 2.0
 
-        # YOLO inference
-        results = self.model.predict(frame, verbose=False, conf=self.conf_th)
-        if (not results) or (results[0].boxes is None) or (len(results[0].boxes) == 0):
-            self._check_lost(now)
-            return
-
-        boxes = results[0].boxes
-        names = results[0].names
+        # YOLO: use detect_th (looser) so we can "see" earlier
+        results = self.model.predict(frame, verbose=False, conf=self.detect_th)
 
         best = None
         best_conf = -1.0
 
-        for b in boxes:
-            conf = float(b.conf[0])
-            cls_id = int(b.cls[0])
-            cls_name = names.get(cls_id, str(cls_id))
-            if cls_name != self.target_class:
-                continue
-            if conf > best_conf:
-                best_conf = conf
-                best = b
+        if results and results[0].boxes is not None and len(results[0].boxes) > 0:
+            boxes = results[0].boxes
+            names = results[0].names
+
+            for b in boxes:
+                conf = float(b.conf[0])
+                cls_id = int(b.cls[0])
+                cls_name = names.get(cls_id, str(cls_id))
+                if cls_name != self.target_class:
+                    continue
+                if conf > best_conf:
+                    best_conf = conf
+                    best = b
 
         if best is None:
-            self._check_lost(now)
+            self._handle_not_seen(now)
             return
 
-        # Target seen -> TRACKING
+        # Seen
         self.last_seen_time = now
+        self.last_missing_time = None
+
+        # Enter TRACKING
         if not self.tracking:
             self.tracking = True
-            self.get_logger().info("🎯 Target detected, visual takeover")
+            self.searching = False
+            self.search_start_time = None
+            self.get_logger().info(f"🎯 Target seen (conf={best_conf:.2f}), switch to TRACKING (visual takeover)")
+            self._set_status("TRACKING")
 
         x1, y1, x2, y2 = [float(v) for v in best.xyxy[0]]
         u_center = (x1 + x2) / 2.0
@@ -217,20 +284,31 @@ class AlignToTarget(Node):
         # normalized horizontal error [-1,1]
         e = (u_center - cx) / cx
 
-        # angular: steer to center
+        # conf gate
+        allow_forward = (best_conf >= self.control_th)
+
+        # angular: always try to center
         w = clamp(-self.Kp_ang * e, -self.max_w, self.max_w)
 
-        # linear: move forward when roughly centered
+        # linear: only move forward when conf strong + centered + bbox not tiny
         v = 0.0
-        if abs(e) < self.center_tol_norm and area > self.area_min:
+        if allow_forward and abs(e) < self.center_tol_norm and area > self.area_min:
             v = self.Kp_lin * (self.area_target - area)
             v = clamp(v, 0.0, self.max_v)
 
-        # Arrival check: close enough (area large) AND almost centered
-        if (area >= self.area_target) and (abs(e) < self.center_tol_norm):
-            self.get_logger().info(f"✅ Arrived at target: {self.target_class}")
+        # Low conf: rotate-only log (throttled)
+        if not allow_forward:
+            if now - self._last_rotate_only_log > 1.0:
+                self.get_logger().info(
+                    f"👀 Seen '{self.target_class}' conf={best_conf:.2f} (<{self.control_th}), rotate-only (no forward/arrive)"
+                )
+                self._last_rotate_only_log = now
+
+        # Arrival: must be confident AND centered AND close enough
+        if allow_forward and (area >= self.area_target) and (abs(e) < self.center_tol_norm):
+            self.get_logger().info(f"✅ Arrived visually at target: {self.target_class} (area={area:.0f}, e={e:.3f})")
+            self._set_status("ARRIVED")
             self._stop_once()
-            # arm exit after a short hold
             self._exit_armed = True
             self._exit_at = now + self.arrive_hold_sec
             return
@@ -242,22 +320,57 @@ class AlignToTarget(Node):
         self.cmd_pub.publish(tw)
 
     # -----------------------------
-    def _stop_once(self):
+    def _handle_not_seen(self, now: float):
+        # initialize missing time
+        if self.last_missing_time is None:
+            self.last_missing_time = now
+
+        # If we were tracking, check lost timeout
+        if self.tracking and self.last_seen_time is not None:
+            if now - self.last_seen_time > self.lost_timeout:
+                self.tracking = False
+                self.last_seen_time = None
+                self.get_logger().info("👋 Target lost > lost_timeout")
+                if not self.nav_done:
+                    self._set_status("LOST")
+                    self._stop_once()
+                    return
+
+        # If nav not done yet: do nothing (release to nav)
+        if not self.nav_done:
+            # status hint
+            if self.tracking:
+                self._set_status("LOST")
+            else:
+                self._set_status("IDLE")
+            return
+
+        # nav_done=True => allow SEARCHING, but wait a small delay to avoid jitter
+        if (now - self.last_missing_time) < self.search_start_delay and not self.searching:
+            self._set_status("IDLE")
+            return
+
+        # start searching
+        if not self.searching:
+            self.searching = True
+            self.search_start_time = now
+            self.get_logger().info("🔎 nav_done but target not visible -> SEARCHING (rotate to find)")
+            self._set_status("SEARCHING")
+
+        # timeout searching
+        if self.search_start_time is not None and (now - self.search_start_time) > self.search_max_sec:
+            self.get_logger().warn(f"❌ SEARCH timeout: still cannot see target '{self.target_class}'")
+            self._set_status("NOT_FOUND")
+            self._stop_once()
+            self.searching = False
+            self.search_start_time = None
+            return
+
+        # publish rotation command (takeover via mux)
         tw = Twist()
         tw.linear.x = 0.0
-        tw.angular.z = 0.0
+        tw.angular.z = float(self.search_w)
         self.cmd_pub.publish(tw)
-
-    def _check_lost(self, now):
-        if (not self.tracking) or (self.last_seen_time is None):
-            return
-        if now - self.last_seen_time > self.lost_timeout:
-            self.tracking = False
-            self.last_seen_time = None
-            self.get_logger().info("👋 Target lost > timeout, release control to nav")
-            # Important: do NOT publish continuously; just stop once (optional)
-            self._stop_once()
-            # then stop publishing -> mux falls back to nav
 
 
 def main(args=None):
@@ -267,7 +380,6 @@ def main(args=None):
         rclpy.spin(node)
     except KeyboardInterrupt:
         pass
-    # When shutdown is called from inside, rclpy.ok() becomes False
     if rclpy.ok():
         node.destroy_node()
         rclpy.shutdown()

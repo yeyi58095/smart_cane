@@ -59,6 +59,11 @@ class GotoLandmark(Node):
         # Align control topics
         self.declare_parameter("align_enable_topic", "/align/enable")
         self.declare_parameter("align_target_topic", "/align/target_class")
+        self.declare_parameter("align_nav_done_topic", "/align/nav_done")
+        self.declare_parameter("align_status_topic", "/align/status")
+
+        # Visual success requirement
+        self.declare_parameter("visual_timeout", 20.0)  # seconds to wait for visual ARRIVED after nav success
 
         self.landmarks_path = str(self.get_parameter("landmarks_path").value)
         self.map_frame = str(self.get_parameter("map_frame").value)
@@ -69,10 +74,19 @@ class GotoLandmark(Node):
 
         self.align_enable_topic = str(self.get_parameter("align_enable_topic").value)
         self.align_target_topic = str(self.get_parameter("align_target_topic").value)
+        self.align_nav_done_topic = str(self.get_parameter("align_nav_done_topic").value)
+        self.align_status_topic = str(self.get_parameter("align_status_topic").value)
+
+        self.visual_timeout = float(self.get_parameter("visual_timeout").value)
 
         # pubs
         self.align_enable_pub = self.create_publisher(Bool, self.align_enable_topic, 10)
         self.align_target_pub = self.create_publisher(String, self.align_target_topic, 10)
+        self.align_nav_done_pub = self.create_publisher(Bool, self.align_nav_done_topic, 10)
+
+        # status sub
+        self.align_status = "IDLE"
+        self.create_subscription(String, self.align_status_topic, self._status_cb, 10)
 
         # TF
         self.tf_buffer = Buffer()
@@ -82,6 +96,12 @@ class GotoLandmark(Node):
         self.nav_client = ActionClient(self, NavigateToPose, self.nav_action)
         self._goal_handle = None
 
+    def _status_cb(self, msg: String):
+        s = (msg.data or "").strip()
+        if s and s != self.align_status:
+            self.align_status = s
+            self.get_logger().info(f"[align_status] {self.align_status}")
+
     def set_align(self, enable: bool, target: str = None):
         if target is not None:
             m = String()
@@ -90,6 +110,11 @@ class GotoLandmark(Node):
         b = Bool()
         b.data = bool(enable)
         self.align_enable_pub.publish(b)
+
+    def set_nav_done(self, done: bool):
+        b = Bool()
+        b.data = bool(done)
+        self.align_nav_done_pub.publish(b)
 
     def get_robot_xy(self) -> Optional[Tuple[float, float]]:
         try:
@@ -187,8 +212,9 @@ class GotoLandmark(Node):
         x, y = self.choose_point(pts)
         pose = self.make_pose(x, y)
 
-        # ✅ enable align + set target
+        # ✅ Start: enable align + set target; nav_done=False initially
         self.set_align(True, name)
+        self.set_nav_done(False)
 
         # send goal
         goal = NavigateToPose.Goal()
@@ -196,7 +222,21 @@ class GotoLandmark(Node):
 
         self.get_logger().info(f"Sending Nav2 goal: ({x:.3f}, {y:.3f}) target='{name}'")
         send_future = self.nav_client.send_goal_async(goal)
-        rclpy.spin_until_future_complete(self, send_future)
+
+        # spin until goal accepted, but also allow align status to come in
+        while rclpy.ok() and not send_future.done():
+            rclpy.spin_once(self, timeout_sec=0.1)
+            # If align already arrived visually early, cancel nav immediately
+            if self.align_status == "ARRIVED":
+                self.get_logger().info("✅ Visual ARRIVED before nav accepted -> cancel nav, success")
+                self.set_nav_done(True)
+                self.set_align(False)
+                return 0
+
+        if not rclpy.ok():
+            self.set_align(False)
+            return 130
+
         self._goal_handle = send_future.result()
 
         if self._goal_handle is None or not self._goal_handle.accepted:
@@ -206,28 +246,60 @@ class GotoLandmark(Node):
 
         self.get_logger().info("Nav2 goal accepted. Navigating... (Ctrl+C to cancel)")
 
-        # wait result
         result_future = self._goal_handle.get_result_async()
-        try:
-            rclpy.spin_until_future_complete(self, result_future)
-        except KeyboardInterrupt:
-            self.get_logger().warn("Interrupted by user.")
+
+        # Main loop: wait either visual ARRIVED or nav result
+        nav_succeeded = False
+        while rclpy.ok():
+            rclpy.spin_once(self, timeout_sec=0.1)
+
+            if self.align_status == "ARRIVED":
+                self.get_logger().info("✅ Visual ARRIVED -> cancel nav goal and finish")
+                self.cancel_goal_if_any()
+                self.set_align(False)
+                return 0
+
+            if result_future.done():
+                res = result_future.result()
+                status = getattr(res, "status", None)
+                # 4 = SUCCEEDED
+                if status == 4:
+                    nav_succeeded = True
+                else:
+                    self.get_logger().warn(f"Nav2 finished with status={status} (not succeeded).")
+                break
+
+        if not rclpy.ok():
             self.cancel_goal_if_any()
             self.set_align(False)
             return 130
 
-        res = result_future.result()
-        status = getattr(res, "status", None)
+        # If nav failed, stop here (visual may still find target but you're not moving anymore)
+        if not nav_succeeded:
+            self.set_align(False)
+            return 4
 
-        # ✅ always disable align at end
+        # ✅ nav succeeded, but success must be VISUAL
+        self.get_logger().info("🧭 Nav2 reached coarse goal. Now require VISUAL ARRIVED.")
+        self.set_nav_done(True)  # allow align to SEARCH (rotate) if target not visible
+
+        t0 = self.get_clock().now()
+        while rclpy.ok():
+            rclpy.spin_once(self, timeout_sec=0.1)
+
+            if self.align_status == "ARRIVED":
+                self.get_logger().info("✅ Visual ARRIVED after nav success.")
+                self.set_align(False)
+                return 0
+
+            dt = (self.get_clock().now() - t0).nanoseconds * 1e-9
+            if dt > self.visual_timeout:
+                self.get_logger().warn("❌ Visual timeout: nav arrived but target still not visually ARRIVED.")
+                self.set_align(False)
+                return 5
+
         self.set_align(False)
-
-        if status == 4:  # STATUS_SUCCEEDED in action_msgs/GoalStatus
-            self.get_logger().info(f"✅ Nav2 arrived near landmark: {name}")
-            return 0
-
-        self.get_logger().warn(f"Nav2 finished with status={status} (not succeeded).")
-        return 4
+        return 130
 
 
 def main():
@@ -243,10 +315,14 @@ def main():
 
     try:
         code = node.run(name)
+    except KeyboardInterrupt:
+        code = 130
+        node.cancel_goal_if_any()
     finally:
-        # make sure align disabled even if errors
+        # Always disable align at end
         try:
             node.set_align(False)
+            node.set_nav_done(False)
         except Exception:
             pass
         node.destroy_node()

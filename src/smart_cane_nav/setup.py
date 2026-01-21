@@ -25,5 +25,6 @@ setup(
         'qt_cmd_vel_ui = smart_cane_nav.qt_cmd_vel_ui:main',
         'collision_guidance = smart_cane_nav.collision_guidance:main',
          'align_to_target = smart_cane_nav.align_to_target:main',
+         'cmd_vel_safety_filter = smart_cane_nav.cmd_vel_safety_filter:main',
     ]},
 )

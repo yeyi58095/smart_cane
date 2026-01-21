@@ -6,7 +6,7 @@ twist_mux:
         timeout: 0.5
         priority: 10
       align:
-        topic: /cmd_vel_align
+        topic: /cmd_vel_align_safe
         timeout: 0.2
         priority: 100
 

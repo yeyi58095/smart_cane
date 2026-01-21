@@ -48,7 +48,8 @@ class AlignToTarget(Node):
         # Two-stage threshold:
         # - detect_th: consider "seen" if conf >= detect_th
         # - control_th: allow forward/arrived only if conf >= control_th
-        self.declare_parameter('detect_th', 0.4)
+        
+        # self.declare_parameter('detect_th', 0.4)
         self.declare_parameter('control_th', 0.6)
 
         # angular control
@@ -88,7 +89,7 @@ class AlignToTarget(Node):
         self.target_class = str(self.get_parameter('target_class').value)
         self.model_path = str(self.get_parameter('yolo_model').value)
 
-        self.detect_th = float(self.get_parameter('detect_th').value)
+        # self.detect_th = float(self.get_parameter('detect_th').value)
         self.control_th = float(self.get_parameter('control_th').value)
 
         self.Kp_ang = float(self.get_parameter('Kp_ang').value)
@@ -153,7 +154,7 @@ class AlignToTarget(Node):
         self._set_status("IDLE")
 
         self.get_logger().info(
-            f"[align_to_target] ready. target='{self.target_class}', detect_th={self.detect_th}, control_th={self.control_th}, "
+            f"[align_to_target] ready. target='{self.target_class}', control_th={self.control_th}, "
             f"cmd='{self.cmd_topic}', image='{self.image_topic}'"
         )
 
@@ -242,7 +243,7 @@ class AlignToTarget(Node):
         cx = W / 2.0
 
         # YOLO: use detect_th (looser) so we can "see" earlier
-        results = self.model.predict(frame, verbose=False, conf=self.detect_th)
+        results = self.model.predict(frame, verbose=False, conf=self.control_th)
 
         best = None
         best_conf = -1.0
@@ -284,6 +285,7 @@ class AlignToTarget(Node):
         # normalized horizontal error [-1,1]
         e = (u_center - cx) / cx
 
+        '''
         # conf gate
         allow_forward = (best_conf >= self.control_th)
 
@@ -303,9 +305,18 @@ class AlignToTarget(Node):
                     f"👀 Seen '{self.target_class}' conf={best_conf:.2f} (<{self.control_th}), rotate-only (no forward/arrive)"
                 )
                 self._last_rotate_only_log = now
+        '''
+        # angular: always try to center
+        w = clamp(-self.Kp_ang * e, -self.max_w, self.max_w)
 
-        # Arrival: must be confident AND centered AND close enough
-        if allow_forward and (area >= self.area_target) and (abs(e) < self.center_tol_norm):
+        # linear: move forward only when centered + bbox not tiny
+        v = 0.0
+        if abs(e) < self.center_tol_norm and area > self.area_min:
+            v = self.Kp_lin * (self.area_target - area)
+            v = clamp(v, 0.0, self.max_v)
+
+
+        if (area >= self.area_target) and (abs(e) < self.center_tol_norm):
             self.get_logger().info(f"✅ Arrived visually at target: {self.target_class} (area={area:.0f}, e={e:.3f})")
             self._set_status("ARRIVED")
             self._stop_once()
@@ -337,13 +348,25 @@ class AlignToTarget(Node):
                     return
 
         # If nav not done yet: do nothing (release to nav)
+        # If nav not done yet: release to nav, but DON'T flicker LOST on short dropouts
         if not self.nav_done:
-            # status hint
-            if self.tracking:
+            if self.tracking and self.last_seen_time is not None:
+                # within grace window -> keep status as TRACKING (no LOST flicker)
+                if (now - self.last_seen_time) <= self.lost_timeout:
+                    self._set_status("TRACKING")
+                    return
+
+                # truly lost (exceeded lost_timeout)
+                self.tracking = False
+                self.last_seen_time = None
+                self.get_logger().info("👋 Target lost > lost_timeout")
                 self._set_status("LOST")
-            else:
-                self._set_status("IDLE")
+                self._stop_once()
+                return
+
+            self._set_status("IDLE")
             return
+
 
         # nav_done=True => allow SEARCHING, but wait a small delay to avoid jitter
         if (now - self.last_missing_time) < self.search_start_delay and not self.searching:

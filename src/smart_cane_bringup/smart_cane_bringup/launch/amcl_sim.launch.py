@@ -198,8 +198,8 @@ def generate_launch_description():
             'yolo_model': LaunchConfiguration('yolo_model'),
 
             # 你想要的：看到就算有看到（>=0.4）
-            'detect_th': 0.4,
-            'control_th': 0.6,
+            # 'detect_th': 0.4,
+            'control_th': 0.4,
         }]
     )
 

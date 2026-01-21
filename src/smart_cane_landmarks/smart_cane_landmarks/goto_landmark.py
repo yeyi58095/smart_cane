@@ -300,6 +300,28 @@ class GotoLandmark(Node):
 
         self.set_align(False)
         return 130
+    
+    def cleanup_action_client(self):
+        """
+        Prevent rclpy.action.client.ActionClient.__del__ from trying to destroy
+        after the node handle is already destroyed.
+        """
+        try:
+            # if a goal is active, try cancel once (best-effort)
+            if self._goal_handle is not None:
+                try:
+                    future = self._goal_handle.cancel_goal_async()
+                    rclpy.spin_until_future_complete(self, future, timeout_sec=1.0)
+                except Exception:
+                    pass
+
+            # Explicitly destroy the action client before destroying the node
+            if getattr(self, "nav_client", None) is not None:
+                self.nav_client.destroy()
+                self.nav_client = None
+        except Exception as e:
+            self.get_logger().warn(f"cleanup_action_client failed: {e}")
+
 
 
 def main():
@@ -325,9 +347,16 @@ def main():
             node.set_nav_done(False)
         except Exception:
             pass
+                # Make shutdown pretty: destroy ActionClient before node is destroyed
+        try:
+            node.cleanup_action_client()
+        except Exception:
+            pass
+
         node.destroy_node()
         if rclpy.ok():
             rclpy.shutdown()
+
 
     return int(code)
 

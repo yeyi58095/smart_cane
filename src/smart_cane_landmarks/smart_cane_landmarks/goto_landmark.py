@@ -4,6 +4,7 @@ import re
 import sys
 import math
 from typing import List, Tuple, Optional
+import time
 
 import rclpy
 from rclpy.node import Node
@@ -213,8 +214,7 @@ class GotoLandmark(Node):
         pose = self.make_pose(x, y)
 
         # ✅ Start: enable align + set target; nav_done=False initially
-        self.set_align(True, name)
-        self.set_nav_done(False)
+        self._publish_align_state_burst(enable=True, target=name, nav_done=False, repeats=8, dt=0.08)
 
         # send goal
         goal = NavigateToPose.Goal()
@@ -229,7 +229,7 @@ class GotoLandmark(Node):
             # If align already arrived visually early, cancel nav immediately
             if self.align_status == "ARRIVED":
                 self.get_logger().info("✅ Visual ARRIVED before nav accepted -> cancel nav, success")
-                self.set_nav_done(True)
+                self._publish_align_state_burst(enable=True, target=name, nav_done=True, repeats=10, dt=0.08)
                 self.set_align(False)
                 return 0
 
@@ -281,7 +281,8 @@ class GotoLandmark(Node):
 
         # ✅ nav succeeded, but success must be VISUAL
         self.get_logger().info("🧭 Nav2 reached coarse goal. Now require VISUAL ARRIVED.")
-        self.set_nav_done(True)  # allow align to SEARCH (rotate) if target not visible
+        self._publish_align_state_burst(enable=True, target=name, nav_done=True, repeats=10, dt=0.08)
+      # allow align to SEARCH (rotate) if target not visible
 
         t0 = self.get_clock().now()
         while rclpy.ok():
@@ -321,6 +322,27 @@ class GotoLandmark(Node):
                 self.nav_client = None
         except Exception as e:
             self.get_logger().warn(f"cleanup_action_client failed: {e}")
+
+    def _publish_align_state_burst(self, enable: bool, target: str, nav_done: bool,
+                                repeats: int = 8, dt: float = 0.08):
+        """
+        ROS2 discovery timing sometimes drops the very first messages.
+        Burst publish makes sure align_to_target receives the state.
+        Foxy has no clock.sleep_for(), so use time.sleep().
+        """
+        for _ in range(repeats):
+            if not rclpy.ok():
+                return
+
+            # target first (so enable immediately uses correct target)
+            self.set_align(enable, target)
+            self.set_nav_done(nav_done)
+
+            # give DDS some time to deliver and let callbacks run
+            rclpy.spin_once(self, timeout_sec=0.01)
+            time.sleep(dt)
+
+
 
 
 

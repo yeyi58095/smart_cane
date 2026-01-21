@@ -79,6 +79,9 @@ class AlignToTarget(Node):
         self.declare_parameter('target_topic', '/align/target_class')
         self.declare_parameter('nav_done_topic', '/align/nav_done')
         self.declare_parameter('status_topic', '/align/status')
+        self.declare_parameter('search_rounds', 2)          # rotate N rounds max
+        self.declare_parameter('search_pause_sec', 0.3)    # pause between rounds
+
 
         # -----------------------------
         # Read parameters
@@ -113,6 +116,13 @@ class AlignToTarget(Node):
         self.target_topic = str(self.get_parameter('target_topic').value)
         self.nav_done_topic = str(self.get_parameter('nav_done_topic').value)
         self.status_topic = str(self.get_parameter('status_topic').value)
+
+        self.search_rounds = int(self.get_parameter('search_rounds').value)
+        self.search_pause_sec = float(self.get_parameter('search_pause_sec').value)
+        self._search_round = 0
+        self._search_pause_until = None
+
+
 
         # -----------------------------
         # ROS interfaces
@@ -181,6 +191,9 @@ class AlignToTarget(Node):
         self._exit_armed = False
         self._exit_at = None
         self._last_rotate_only_log = 0.0
+        self._search_round = 0
+        self._search_pause_until = None
+
 
     # -----------------------------
     def enable_cb(self, msg: Bool):
@@ -381,13 +394,39 @@ class AlignToTarget(Node):
             self._set_status("SEARCHING")
 
         # timeout searching
+        # handle pause between rounds
+        if self._search_pause_until is not None:
+            if now < self._search_pause_until:
+                self._stop_once()
+                self._set_status("SEARCHING")
+                return
+            else:
+                self._search_pause_until = None
+                self.search_start_time = now  # restart timing for next round
+
+        # timeout searching (one round finished)
         if self.search_start_time is not None and (now - self.search_start_time) > self.search_max_sec:
-            self.get_logger().warn(f"❌ SEARCH timeout: still cannot see target '{self.target_class}'")
-            self._set_status("NOT_FOUND")
+            self._search_round += 1
+            if self._search_round >= self.search_rounds:
+                self.get_logger().warn(
+                    f"❌ SEARCH timeout: {self.search_rounds} rounds done, still cannot see '{self.target_class}'"
+                )
+                self._set_status("NOT_FOUND")
+                self._stop_once()
+                self.searching = False
+                self.search_start_time = None
+                return
+
+            # start next round after a short pause
+            self.get_logger().info(
+                f"🔄 SEARCH round {self._search_round}/{self.search_rounds} done -> pause then retry"
+            )
             self._stop_once()
-            self.searching = False
+            self._set_status("SEARCHING")
             self.search_start_time = None
+            self._search_pause_until = now + self.search_pause_sec
             return
+
 
         # publish rotation command (takeover via mux)
         tw = Twist()

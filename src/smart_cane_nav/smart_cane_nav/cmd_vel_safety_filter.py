@@ -9,113 +9,175 @@ from geometry_msgs.msg import Twist
 from sensor_msgs.msg import LaserScan
 
 
-def clamp(x, lo, hi):
-    return lo if x < lo else hi if x > hi else x
-
-
 class CmdVelSafetyFilter(Node):
     """
-    Sub:
-      - /cmd_vel_align (Twist)    desired cmd from vision align
-      - /scan (LaserScan)        obstacle distances
-    Pub:
-      - /cmd_vel_align_safe (Twist) filtered cmd (won't crash into obstacles)
+    Minimal forward-collision safety filter.
+
+    Philosophy:
+      - ONLY stop when there is a REAL obstacle very close in front.
+      - If scan is alive but front sector has no returns -> consider CLEAR.
+      - If scan times out -> STOP (sensor failure).
+
+    This is a "bumper-like" safety, not a planner.
     """
 
     def __init__(self):
         super().__init__('cmd_vel_safety_filter')
 
+        # -------------------------
+        # Parameters
+        # -------------------------
         self.declare_parameter('scan_topic', '/scan')
         self.declare_parameter('in_cmd_topic', '/cmd_vel_align')
         self.declare_parameter('out_cmd_topic', '/cmd_vel_align_safe')
 
-        # Front sector (degrees) to check for obstacles
-        self.declare_parameter('front_half_angle_deg', 25.0)
+        # front check
+        self.declare_parameter('front_half_angle_deg', 15.0)  # +/- degrees
+        self.declare_parameter('stop_dist', 0.25)             # meters
 
-        # Distance thresholds (meters)
-        self.declare_parameter('stop_dist', 0.35)   # closer than this => stop forward
-        self.declare_parameter('slow_dist', 0.75)   # within this => scale down forward
-
-        # If scan not received recently, be conservative
+        # sensor sanity
         self.declare_parameter('scan_timeout', 0.6)
+        self.declare_parameter('min_valid_margin', 0.02)      # ignore < range_min + margin
 
-        self.scan_topic = str(self.get_parameter('scan_topic').value)
-        self.in_cmd_topic = str(self.get_parameter('in_cmd_topic').value)
-        self.out_cmd_topic = str(self.get_parameter('out_cmd_topic').value)
+        # logging
+        self.declare_parameter('log_every_sec', 1.0)
 
-        self.front_half_angle = math.radians(float(self.get_parameter('front_half_angle_deg').value))
+        # -------------------------
+        # Read params
+        # -------------------------
+        self.scan_topic = self.get_parameter('scan_topic').value
+        self.in_cmd_topic = self.get_parameter('in_cmd_topic').value
+        self.out_cmd_topic = self.get_parameter('out_cmd_topic').value
+
+        self.front_half_angle = math.radians(
+            float(self.get_parameter('front_half_angle_deg').value)
+        )
         self.stop_dist = float(self.get_parameter('stop_dist').value)
-        self.slow_dist = float(self.get_parameter('slow_dist').value)
-        self.scan_timeout = float(self.get_parameter('scan_timeout').value)
 
+        self.scan_timeout = float(self.get_parameter('scan_timeout').value)
+        self.min_valid_margin = float(self.get_parameter('min_valid_margin').value)
+
+        self.log_every_sec = float(self.get_parameter('log_every_sec').value)
+
+        # -------------------------
+        # ROS interfaces
+        # -------------------------
         self.cmd_pub = self.create_publisher(Twist, self.out_cmd_topic, 10)
         self.create_subscription(Twist, self.in_cmd_topic, self.cmd_cb, 10)
         self.create_subscription(LaserScan, self.scan_topic, self.scan_cb, 10)
 
-        self._last_scan_time = None
-        self._front_min = None
+        # -------------------------
+        # State
+        # -------------------------
+        self.last_scan_time = None
+        self.front_blocked = False
+        self.front_block_dist = None
+
+        self.range_min = None
+        self.range_max = None
+
+        self.last_log_t = 0.0
 
         self.get_logger().info(
-            f"[safety_filter] scan='{self.scan_topic}', in='{self.in_cmd_topic}', out='{self.out_cmd_topic}', "
-            f"front_half_angle_deg={math.degrees(self.front_half_angle):.1f}, stop={self.stop_dist}, slow={self.slow_dist}"
+            f"[safety] front_half_angle_deg={math.degrees(self.front_half_angle):.1f}, "
+            f"stop_dist={self.stop_dist:.2f}"
         )
 
+    # ------------------------------------------------
+    # Scan callback
+    # ------------------------------------------------
     def scan_cb(self, msg: LaserScan):
         now = time.time()
-        self._last_scan_time = now
+        self.last_scan_time = now
 
-        # Compute min distance in front sector
-        a = msg.angle_min
+        self.range_min = msg.range_min
+        self.range_max = msg.range_max
+
+        a0 = msg.angle_min
         inc = msg.angle_increment
+        n = len(msg.ranges)
 
-        # Indices for [-front_half_angle, +front_half_angle]
-        i0 = int(( -self.front_half_angle - a) / inc)
-        i1 = int(( +self.front_half_angle - a) / inc)
+        if n == 0 or inc == 0.0:
+            self.front_blocked = False
+            self.front_block_dist = None
+            return
 
-        i0 = max(0, min(i0, len(msg.ranges) - 1))
-        i1 = max(0, min(i1, len(msg.ranges) - 1))
+        # indices for front sector
+        i0 = int(((-self.front_half_angle) - a0) / inc)
+        i1 = int(((+self.front_half_angle) - a0) / inc)
+
+        i0 = max(0, min(i0, n - 1))
+        i1 = max(0, min(i1, n - 1))
         if i1 < i0:
             i0, i1 = i1, i0
 
-        front_ranges = []
-        for r in msg.ranges[i0:i1+1]:
-            if math.isfinite(r) and r > 0.0:
-                front_ranges.append(r)
+        min_valid = self.range_min + self.min_valid_margin
 
-        self._front_min = min(front_ranges) if front_ranges else None
+        blocked = False
+        blocked_dist = None
 
+        for r in msg.ranges[i0:i1 + 1]:
+            if not math.isfinite(r):
+                continue
+            if r < min_valid or r > self.range_max:
+                continue
+
+            # ONLY care about very close obstacle
+            if r < self.stop_dist:
+                blocked = True
+                blocked_dist = r
+                break
+
+        self.front_blocked = blocked
+        self.front_block_dist = blocked_dist
+
+        # throttled log
+        if (now - self.last_log_t) >= self.log_every_sec:
+            self.last_log_t = now
+            if blocked:
+                self.get_logger().info(
+                    f"[scan] FRONT BLOCKED d={blocked_dist:.2f} < stop={self.stop_dist:.2f}"
+                )
+            else:
+                self.get_logger().info(
+                    f"[scan] FRONT CLEAR (no obstacle within {self.stop_dist:.2f} m)"
+                )
+
+    # ------------------------------------------------
+    # Cmd callback
+    # ------------------------------------------------
     def cmd_cb(self, msg: Twist):
         now = time.time()
 
-        # Default: pass-through
         out = Twist()
-        out.linear.x = float(msg.linear.x)
-        out.angular.z = float(msg.angular.z)
+        out.linear.x = msg.linear.x
+        out.angular.z = msg.angular.z
 
-        # If moving forward, apply safety based on scan
+        reason = "PASS"
+
+        # only protect forward motion
         if out.linear.x > 0.0:
-            # if scan stale, be conservative: stop forward
-            if self._last_scan_time is None or (now - self._last_scan_time) > self.scan_timeout:
-                out.linear.x = 0.0
-                self.cmd_pub.publish(out)
-                return
 
-            d = self._front_min
-            if d is None:
-                # no valid ranges => conservative
+            # scan timeout -> stop
+            if self.last_scan_time is None or (now - self.last_scan_time) > self.scan_timeout:
                 out.linear.x = 0.0
-                self.cmd_pub.publish(out)
-                return
+                reason = "SCAN_TIMEOUT_STOP"
 
-            if d < self.stop_dist:
+            # real close obstacle -> stop
+            elif self.front_blocked:
                 out.linear.x = 0.0
-            elif d < self.slow_dist:
-                # scale forward speed linearly between stop_dist..slow_dist
-                scale = (d - self.stop_dist) / max(1e-6, (self.slow_dist - self.stop_dist))
-                scale = clamp(scale, 0.0, 1.0)
-                out.linear.x = out.linear.x * scale
+                reason = f"STOP_OBSTACLE d={self.front_block_dist:.2f}"
+
+            # else: CLEAR -> PASS
 
         self.cmd_pub.publish(out)
+
+        # log (throttled)
+        if (now - self.last_log_t) >= self.log_every_sec:
+            self.get_logger().info(
+                f"[cmd] v_in={msg.linear.x:.2f} -> v_out={out.linear.x:.2f} "
+                f"w={out.angular.z:.2f} reason={reason}"
+            )
 
 
 def main(args=None):

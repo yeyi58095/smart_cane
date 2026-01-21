@@ -148,12 +148,15 @@ def generate_launch_description():
             'scan_topic': '/scan',                 # 依你實際 LiDAR topic
             'in_cmd_topic': LaunchConfiguration('align_cmd'),  # /cmd_vel_align
             'out_cmd_topic': '/cmd_vel_align_safe',
+            
+            'front_half_angle_deg': 15.0,  # ±15°
+            'stop_dist': 0.25,             # 25 cm
 
-            'front_half_angle_deg': 25.0,
-            'stop_dist': 0.35,
-            'slow_dist': 0.75,
             'scan_timeout': 0.6,
-        }]
+            'min_valid_margin': 0.02,
+
+            'log_every_sec': 1.0,
+                    }]
     )
 
 

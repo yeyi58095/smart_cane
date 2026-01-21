@@ -199,7 +199,7 @@ def generate_launch_description():
 
             # 你想要的：看到就算有看到（>=0.4）
             'detect_th': 0.4,
-            'control_th': 0.6,
+            'control_th': 0.5,
         }]
     )
 

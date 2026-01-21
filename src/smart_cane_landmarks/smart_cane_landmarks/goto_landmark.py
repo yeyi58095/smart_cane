@@ -307,29 +307,65 @@ def main():
 
     if len(sys.argv) < 2:
         print("Usage: ros2 run smart_cane_landmarks goto_landmark <name>")
-        rclpy.shutdown()
+        try:
+            rclpy.shutdown()
+        except Exception:
+            pass
         return 2
 
     name = sys.argv[1].strip()
     node = GotoLandmark()
+    code = 0
 
     try:
         code = node.run(name)
+
     except KeyboardInterrupt:
         code = 130
-        node.cancel_goal_if_any()
+        # ✅ 先取消 Nav2 goal（如果有）
+        try:
+            node.cancel_goal_if_any()
+        except Exception:
+            pass
+
+    except Exception as e:
+        node.get_logger().error(f"Unhandled exception: {e}")
+        code = 1
+
     finally:
-        # Always disable align at end
+        # ✅ 不管如何都先放手（避免 mux 一直被 align 佔著）
         try:
             node.set_align(False)
             node.set_nav_done(False)
         except Exception:
             pass
-        node.destroy_node()
-        if rclpy.ok():
-            rclpy.shutdown()
+
+        # ✅ 先 destroy 掉 ActionClient（避免 __del__ 在 shutdown 後爆）
+        # 如果你的 client 名字不是 nav_client，這段也能掃到
+        try:
+            for v in node.__dict__.values():
+                try:
+                    if v.__class__.__name__ == "ActionClient":
+                        v.destroy()
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
+        # ✅ 最後才 destroy node / shutdown（都要包住）
+        try:
+            node.destroy_node()
+        except Exception:
+            pass
+
+        try:
+            if rclpy.ok():
+                rclpy.shutdown()
+        except Exception:
+            pass
 
     return int(code)
+
 
 
 if __name__ == "__main__":

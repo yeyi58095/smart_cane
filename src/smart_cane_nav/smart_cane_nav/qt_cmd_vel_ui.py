@@ -39,6 +39,19 @@ class CmdVelBridge(Node):
         self.collision_state = ""
         self.state_sub = self.create_subscription(String, '/collision_state', self.state_cb, 10)
 
+        # ✅ Our own navigation result (not Nav2)
+        self.nav_result_sub = self.create_subscription(
+            String,
+            '/navigation_result',
+            self.nav_result_cb,
+            10
+        )
+        self._pulse_nav_success = False
+        self._pulse_nav_failed = False
+        self._pulse_nav_canceled = False
+        self._pulse_nav_blocked = False
+
+
 
     def nav_cb(self, msg: Twist):
         self.nav_vx = float(msg.linear.x)
@@ -48,6 +61,16 @@ class CmdVelBridge(Node):
         # collision_guidance 發空字串代表解除
         self.collision_state = (msg.data or "").strip()
 
+    def nav_result_cb(self, msg: String):
+        s = (msg.data or "").strip().upper()
+        if s == "SUCCESS":
+            self._pulse_nav_success = True
+        elif s == "FAILED":
+            self._pulse_nav_failed = True
+        elif s == "CANCELED":
+            self._pulse_nav_canceled = True
+        elif s == "BLOCKED":
+            self._pulse_nav_blocked = True
 
     def status_cb(self, msg: GoalStatusArray):
         # 4 SUCCEEDED, 5 CANCELED, 6 ABORTED
@@ -63,13 +86,21 @@ class CmdVelBridge(Node):
                 break
 
     def take_pulses(self):
-        suc = self._pulse_success
-        fail = self._pulse_failed
-        can = self._pulse_canceled
+        suc = self._pulse_success or self._pulse_nav_success
+        fail = self._pulse_failed or self._pulse_nav_failed
+        can = self._pulse_canceled or self._pulse_nav_canceled
+        blocked = self._pulse_nav_blocked
+
         self._pulse_success = False
         self._pulse_failed = False
         self._pulse_canceled = False
-        return suc, fail, can
+
+        self._pulse_nav_success = False
+        self._pulse_nav_failed = False
+        self._pulse_nav_canceled = False
+        self._pulse_nav_blocked = False
+
+        return suc, fail, can, blocked
 
     def publish_cmd(self, vx: float, wz: float):
         t = Twist()
@@ -272,13 +303,16 @@ class Joystick(QWidget):
             vx, wz, *_ = self.compute_target_twist()
             self.node.publish_cmd(vx, wz)
 
-        suc, fail, can = self.node.take_pulses()
+        suc, fail, can, blocked = self.node.take_pulses()
         if suc:
             self.show_status("✅ Navigation Succeeded", QColor(0, 150, 0), ms=2800)
+        elif blocked:
+            self.show_status("⛔ Blocked Ahead", QColor(200, 80, 0), ms=3500)
         elif fail:
             self.show_status("❌ Navigation Failed", QColor(200, 0, 0), ms=3500)
         elif can:
             self.show_status("⚠️ Navigation Canceled", QColor(180, 120, 0), ms=2500)
+
 
         self.update()
 

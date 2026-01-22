@@ -17,6 +17,8 @@ from rclpy.action import ActionClient
 
 from tf2_ros import Buffer, TransformListener, TransformException
 
+from std_msgs.msg import String
+
 
 POINT_RE = re.compile(r"\(\s*([+-]?\d+(?:\.\d+)?)\s*,\s*([+-]?\d+(?:\.\d+)?)\s*\)")
 
@@ -89,6 +91,10 @@ class GotoLandmark(Node):
         self.align_status = "IDLE"
         self.create_subscription(String, self.align_status_topic, self._status_cb, 10)
 
+        # ✅ Navigation result publisher (for UI / external systems)
+        self.result_topic = "/navigation_result"
+        self.result_pub = self.create_publisher(String, self.result_topic, 10)
+
         # TF
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
@@ -102,6 +108,28 @@ class GotoLandmark(Node):
         if s and s != self.align_status:
             self.align_status = s
             self.get_logger().info(f"[align_status] {self.align_status}")
+
+    def publish_result(self, text: str):
+        """
+        Publish final navigation result for UI.
+        text: SUCCESS / BLOCKED / FAILED / CANCELED
+        """
+        msg = String()
+        msg.data = str(text)
+        self.result_pub.publish(msg)
+        self.get_logger().info(f"[nav_result] {msg.data}")
+
+    def publish_result_burst(self, text: str, repeats: int = 5, dt: float = 0.05):
+        """
+        Burst publish in case first messages are dropped.
+        """
+        for _ in range(int(repeats)):
+            if not rclpy.ok():
+                return
+            self.publish_result(text)
+            rclpy.spin_once(self, timeout_sec=0.01)
+            time.sleep(float(dt))
+
 
     def set_align(self, enable: bool, target: str = None):
         if target is not None:
@@ -256,6 +284,7 @@ class GotoLandmark(Node):
             if self.align_status == "ARRIVED":
                 self.get_logger().info("✅ Visual ARRIVED -> cancel nav goal and finish")
                 self.cancel_goal_if_any()
+                self.publish_result_burst("SUCCESS", repeats=6)
                 self.set_align(False)
                 return 0
 
@@ -290,12 +319,14 @@ class GotoLandmark(Node):
 
             if self.align_status == "ARRIVED":
                 self.get_logger().info("✅ Visual ARRIVED after nav success.")
+                self.publish_result_burst("SUCCESS", repeats=6)
                 self.set_align(False)
                 return 0
 
             dt = (self.get_clock().now() - t0).nanoseconds * 1e-9
             if dt > self.visual_timeout:
                 self.get_logger().warn("❌ Visual timeout: nav arrived but target still not visually ARRIVED.")
+                self.publish_result_burst("FAILED", repeats=6)
                 self.set_align(False)
                 return 5
 
@@ -362,6 +393,11 @@ def main():
     except KeyboardInterrupt:
         code = 130
         node.cancel_goal_if_any()
+        try:
+            node.publish_result_burst("CANCELED", repeats=6)
+        except Exception:
+            pass
+
     finally:
         # Always disable align at end
         try:
